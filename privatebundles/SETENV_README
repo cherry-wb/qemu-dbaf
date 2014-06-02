@@ -1,0 +1,6 @@
+TIPS
+
+1、in .bashrc file add  the following line to the end of file, if enconter compile error.
+
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include:/usr/include/x86_64-linux-gnu
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include:/usr/include/x86_64-linux-gnu 

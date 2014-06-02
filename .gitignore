@@ -104,3 +104,5 @@ cscope.*
 tags
 TAGS
 *~
+/aidecheatfolder
+/build
