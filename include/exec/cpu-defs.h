@@ -41,6 +41,8 @@
 #if TARGET_LONG_SIZE == 4
 typedef int32_t target_long;
 typedef uint32_t target_ulong;
+typedef int32_t target_int;
+typedef uint32_t target_uint;
 #define TARGET_FMT_lx "%08x"
 #define TARGET_FMT_ld "%d"
 #define TARGET_FMT_lu "%u"

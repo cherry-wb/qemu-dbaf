@@ -283,6 +283,19 @@ DEF(qemu_st64, 0, 2, 1, IMPL_OLD_LDST | TCG_OPF_64BIT)
 
 #endif /* TCG_TARGET_REG_BITS != 32 */
 
+#ifdef CONFIG_DBAF
+#if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
+DEF(dbaf_start, 0, 0, 2, TCG_OPF_NOT_PRESENT)
+#else
+DEF(dbaf_start, 0, 0, 1, TCG_OPF_NOT_PRESENT)
+#endif
+#if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
+DEF(dbaf_end, 0, 0, 2, TCG_OPF_NOT_PRESENT)
+#else
+DEF(dbaf_end, 0, 0, 1, TCG_OPF_NOT_PRESENT)
+#endif
+#endif
+
 #undef IMPL_OLD_LDST
 
 #undef IMPL

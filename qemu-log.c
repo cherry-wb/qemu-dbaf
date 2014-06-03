@@ -117,6 +117,8 @@ const QEMULogItem qemu_log_items[] = {
     { LOG_GUEST_ERROR, "guest_errors",
       "log when the guest OS does something invalid (eg accessing a\n"
       "non-existent register)" },
+	{ CPU_LOG_EXEC_ASM, "exec_asm",
+	  "show executed host assembly code for each compiled TB" },
     { 0, NULL, NULL },
 };
 

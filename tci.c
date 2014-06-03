@@ -1070,10 +1070,18 @@ uintptr_t tcg_qemu_tb_exec(CPUArchState *env, uint8_t *tb_ptr)
 
 #if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
         case INDEX_op_debug_insn_start:
+#ifdef CONFIG_DBAF
+        case INDEX_op_dbaf_start:
+        case INDEX_op_dbaf_end:
+#endif
             TODO();
             break;
 #else
         case INDEX_op_debug_insn_start:
+#ifdef CONFIG_DBAF
+        case INDEX_op_dbaf_start:
+        case INDEX_op_dbaf_end:
+#endif
             TODO();
             break;
 #endif

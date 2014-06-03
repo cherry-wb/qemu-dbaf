@@ -76,6 +76,9 @@
 #endif
 #include "hw/lm32/lm32_pic.h"
 
+#ifdef CONFIG_DBAF
+#include "dbaf/DBAF_main.h"
+#endif
 //#define DEBUG
 //#define DEBUG_COMPLETION
 
@@ -118,7 +121,7 @@ struct MonitorCompletionData {
     Monitor *mon;
     void (*user_print)(Monitor *mon, const QObject *data);
 };
-
+#if 0 // DBAF - moved out to monitor.h so the plugins can use it
 typedef struct mon_cmd_t {
     const char *name;
     const char *args_type;
@@ -139,7 +142,7 @@ typedef struct mon_cmd_t {
     struct mon_cmd_t *sub_table;
     void (*command_completion)(ReadLineState *rs, int nb_args, const char *str);
 } mon_cmd_t;
-
+#endif
 /* file descriptors passed via SCM_RIGHTS */
 typedef struct mon_fd_t mon_fd_t;
 struct mon_fd_t {
@@ -857,6 +860,21 @@ static int parse_cmdline(const char *cmdline,
     return -1;
 }
 
+
+
+#ifdef CONFIG_DBAF
+static void help_cmd_dump_dbaf(Monitor *mon, const mon_cmd_t *cmds,
+                          const char *prefix, const char *name)
+{
+    const mon_cmd_t *cmd;
+
+    for(cmd = cmds; cmd->name != NULL; cmd++) {
+        if (!name || !strcmp(name, cmd->name))
+            monitor_printf(mon, "%s%s %s -- %s\n", prefix, cmd->name,
+                           cmd->params, cmd->help);
+    }
+}
+#else
 static void help_cmd_dump_one(Monitor *mon,
                               const mon_cmd_t *cmd,
                               char **prefix_args,
@@ -898,10 +916,46 @@ static void help_cmd_dump(Monitor *mon, const mon_cmd_t *cmds,
         }
     }
 }
-
+#endif
 static void help_cmd(Monitor *mon, const char *name)
 {
-    char *args[MAX_ARGS];
+#ifdef CONFIG_DBAF
+	uint32_t bundlesize=0;
+	bundlesize = dbaf_bundles_size;
+	int counter = 0;
+
+	if (name && !strcmp(name, "info")) {
+	        help_cmd_dump_dbaf(mon, info_cmds, "info ", NULL);
+	        //LOK: Added the DBAF commands
+	        if (DBAF_info_cmds != NULL)
+	        {
+	          help_cmd_dump_dbaf(mon, DBAF_info_cmds, "info ", NULL);
+	        }
+	    	for (counter = 0; counter < bundlesize; counter++) {
+				if (dbaf_bundles[counter].bundle && dbaf_bundles[counter].bundle->mon_cmds)
+						help_cmd_dump_dbaf(mon, dbaf_bundles[counter].bundle->mon_cmds, "info ", NULL);
+	    	}
+	    } else {
+	        help_cmd_dump_dbaf(mon, mon_cmds, "", name);
+	        if (DBAF_mon_cmds != NULL)
+	        {
+	          help_cmd_dump_dbaf(mon, DBAF_mon_cmds, "", name);
+	        }
+	    	for (counter = 0; counter < bundlesize; counter++) {
+				if (dbaf_bundles[counter].bundle && dbaf_bundles[counter].bundle->mon_cmds)
+					help_cmd_dump_dbaf(mon, dbaf_bundles[counter].bundle->mon_cmds, "", name);
+	    	}
+	        if (name && !strcmp(name, "log")) {
+	            const QEMULogItem *item;
+	            monitor_printf(mon, "Log items (comma separated):\n");
+	            monitor_printf(mon, "%-10s %s\n", "none", "remove all logs");
+	            for(item = qemu_log_items; item->mask != 0; item++) {
+	                monitor_printf(mon, "%-10s %s\n", item->name, item->help);
+	            }
+	        }
+	    }
+#else
+	char *args[MAX_ARGS];
     int nb_args = 0;
 
     /* 1. parse user input */
@@ -926,6 +980,7 @@ static void help_cmd(Monitor *mon, const char *name)
     help_cmd_dump(mon, mon->cmd_table, args, nb_args, 0);
 
     free_cmdline_args(args, nb_args);
+#endif
 }
 
 static void do_help_cmd(Monitor *mon, const QDict *qdict)
@@ -3720,7 +3775,7 @@ static const mon_cmd_t *monitor_parse_command(Monitor *mon,
                                               const char *cmdline,
                                               int start,
                                               mon_cmd_t *table,
-                                              QDict *qdict)
+                                              QDict *qdict,int is_last_table)
 {
     const char *p, *typestr;
     int c;
@@ -3740,8 +3795,9 @@ static const mon_cmd_t *monitor_parse_command(Monitor *mon,
 
     cmd = search_dispatch_table(table, cmdname);
     if (!cmd) {
-        monitor_printf(mon, "unknown command: '%.*s'\n",
-                       (int)(p - cmdline), cmdline);
+    	if(is_last_table == 1)
+    		monitor_printf(mon, "unknown command: '%.*s'\n",
+    	                       (int)(p - cmdline), cmdline);
         return NULL;
     }
 
@@ -3756,7 +3812,7 @@ static const mon_cmd_t *monitor_parse_command(Monitor *mon,
             return cmd;
         }
         return monitor_parse_command(mon, cmdline, p - cmdline,
-                                     cmd->sub_table, qdict);
+                                     cmd->sub_table, qdict,is_last_table);
     }
 
     /* parse the parameters */
@@ -4139,9 +4195,46 @@ static void handle_user_command(Monitor *mon, const char *cmdline)
 
     qdict = qdict_new();
 
-    cmd = monitor_parse_command(mon, cmdline, 0, mon->cmd_table, qdict);
-    if (!cmd)
+#ifdef CONFIG_DBAF
+    uint32_t bundlesize=0;
+	bundlesize = dbaf_bundles_size;
+	int counter = 0;
+    int loaded = 0;
+    int lastloaded = 0;
+    for (counter = 0; counter < bundlesize; counter++) {
+		if (dbaf_bundles[counter].bundle
+				&& dbaf_bundles[counter].bundle->mon_cmds) {
+			loaded = 1;
+			lastloaded = counter;
+		}
+	}
+	cmd = monitor_parse_command(mon, cmdline, 0, mon->cmd_table, qdict, 0);
+	if (!cmd) {
+		if (loaded) {
+			cmd = monitor_parse_command(mon, cmdline, 0, DBAF_mon_cmds, qdict,
+					0);
+			//monitor_printf(mon, "a-%s\n",cmdline);
+		} else {
+			cmd = monitor_parse_command(mon, cmdline, 0, DBAF_mon_cmds, qdict,
+					1);
+		}
+	}
+   if (!cmd && loaded){
+	    for (counter = 0; counter < bundlesize; counter++) {
+			if (!cmd && dbaf_bundles[counter].bundle
+					&& dbaf_bundles[counter].bundle->mon_cmds) {
+				 cmd = monitor_parse_command(mon, cmdline, 0, dbaf_bundles[counter].bundle->mon_cmds, qdict,lastloaded == counter);
+			}
+		}
+
+	  //monitor_printf(mon, "b-%s\n",cmdline);
+   }
+#else
+    cmd = monitor_parse_command(mon, cmdline, 0, mon->cmd_table, qdict, 1);
+#endif
+    if (!cmd){
         goto out;
+    }
 
     if (handler_is_async(cmd)) {
         user_async_cmd_handler(mon, cmd, qdict);
@@ -4529,7 +4622,11 @@ static void monitor_find_completion_by_table(Monitor *mon,
     const char *ptype, *str;
     const mon_cmd_t *cmd;
     MonitorBlockComplete mbs;
-
+#ifdef CONFIG_DBAF
+	uint32_t bundlesize=0;
+	bundlesize = dbaf_bundles_size;
+	int counter = 0;
+#endif
     if (nb_args <= 1) {
         /* command completion */
         if (nb_args == 0)
@@ -4590,6 +4687,15 @@ static void monitor_find_completion_by_table(Monitor *mon,
             if (!strcmp(cmd->name, "help|?")) {
                 monitor_find_completion_by_table(mon, cmd_table,
                                                  &args[1], nb_args - 1);
+#ifdef CONFIG_DBAF
+				monitor_find_completion_by_table(mon, DBAF_mon_cmds, &args[1], nb_args - 1);
+				for (counter = 0; counter < bundlesize; counter++) {
+					if (dbaf_bundles[counter].bundle
+							&& dbaf_bundles[counter].bundle->mon_cmds) {
+						monitor_find_completion_by_table(mon, dbaf_bundles[counter].bundle->mon_cmds, &args[1], nb_args - 1);
+					}
+				}
+#endif
             }
             break;
         default:
@@ -4604,7 +4710,11 @@ static void monitor_find_completion(void *opaque,
     Monitor *mon = opaque;
     char *args[MAX_ARGS];
     int nb_args, len;
-
+#ifdef CONFIG_DBAF
+	uint32_t bundlesize=0;
+	bundlesize = dbaf_bundles_size;
+	int counter = 0;
+#endif
     /* 1. parse the cmdline */
     if (parse_cmdline(cmdline, &nb_args, args) < 0) {
         return;
@@ -4627,6 +4737,15 @@ static void monitor_find_completion(void *opaque,
 
     /* 2. auto complete according to args */
     monitor_find_completion_by_table(mon, mon->cmd_table, args, nb_args);
+#ifdef CONFIG_DBAF
+    monitor_find_completion_by_table(mon, DBAF_mon_cmds, args, nb_args);
+    for (counter = 0; counter < bundlesize; counter++) {
+		if (dbaf_bundles[counter].bundle
+				&& dbaf_bundles[counter].bundle->mon_cmds) {
+			monitor_find_completion_by_table(mon, dbaf_bundles[counter].bundle->mon_cmds, args, nb_args);
+		}
+	}
+#endif
 
 cleanup:
     free_cmdline_args(args, nb_args);

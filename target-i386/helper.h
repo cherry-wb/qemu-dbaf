@@ -1,6 +1,9 @@
 DEF_HELPER_FLAGS_4(cc_compute_all, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, int)
 DEF_HELPER_FLAGS_4(cc_compute_c, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, int)
-
+#ifdef CONFIG_DBAF
+DEF_HELPER_2(dbaf_tcg_custom_instruction_handler, void, env, i64)
+DEF_HELPER_4(dbaf_tcg_execution_handler, void, env, ptr, tl, tl)
+#endif
 DEF_HELPER_0(lock, void)
 DEF_HELPER_0(unlock, void)
 DEF_HELPER_3(write_eflags, void, env, tl, i32)

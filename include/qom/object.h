@@ -382,7 +382,7 @@ struct ObjectClass
 struct Object
 {
     /*< private >*/
-    ObjectClass *class;
+    ObjectClass *obclass;
     ObjectFree *free;
     QTAILQ_HEAD(, ObjectProperty) properties;
     uint32_t ref;
@@ -474,7 +474,7 @@ struct TypeInfo
  * OBJECT_CHECK:
  * @type: The C type to use for the return value.
  * @obj: A derivative of @type to cast.
- * @name: The QOM typename of @type
+ * @name: The QOM _typename of @type
  *
  * A type safe version of @object_dynamic_cast_assert.  Typically each class
  * will define a macro based on this type to perform type safe dynamic_casts to
@@ -491,7 +491,7 @@ struct TypeInfo
  * OBJECT_CLASS_CHECK:
  * @class: The C type to use for the return value.
  * @obj: A derivative of @type to cast.
- * @name: the QOM typename of @class.
+ * @name: the QOM _typename of @class.
  *
  * A type safe version of @object_class_dynamic_cast_assert.  This macro is
  * typically wrapped by each type to perform type safe casts of a class to a
@@ -505,7 +505,7 @@ struct TypeInfo
  * OBJECT_GET_CLASS:
  * @class: The C type to use for the return value.
  * @obj: The object to obtain the class for.
- * @name: The QOM typename of @obj.
+ * @name: The QOM _typename of @obj.
  *
  * This function will return a specific class for a given object.  Its generally
  * used by each type to provide a type safe macro to get a specific class type
@@ -563,7 +563,7 @@ struct InterfaceClass
 
 /**
  * object_new:
- * @typename: The name of the type of the object to instantiate.
+ * @_typename: The name of the type of the object to instantiate.
  *
  * This function will initialize a new object using heap allocated memory.
  * The returned object has a reference count of 1, and will be freed when
@@ -571,7 +571,7 @@ struct InterfaceClass
  *
  * Returns: The newly allocated and instantiated object.
  */
-Object *object_new(const char *typename);
+Object *object_new(const char *_typename);
 
 /**
  * object_new_with_type:
@@ -601,25 +601,25 @@ void object_initialize_with_type(void *data, size_t size, Type type);
  * object_initialize:
  * @obj: A pointer to the memory to be used for the object.
  * @size: The maximum size available at @obj for the object.
- * @typename: The name of the type of the object to instantiate.
+ * @_typename: The name of the type of the object to instantiate.
  *
  * This function will initialize an object.  The memory for the object should
  * have already been allocated.  The returned object has a reference count of 1,
  * and will be finalized when the last reference is dropped.
  */
-void object_initialize(void *obj, size_t size, const char *typename);
+void object_initialize(void *obj, size_t size, const char *_typename);
 
 /**
  * object_dynamic_cast:
  * @obj: The object to cast.
- * @typename: The @typename to cast to.
+ * @_typename: The @_typename to cast to.
  *
- * This function will determine if @obj is-a @typename.  @obj can refer to an
+ * This function will determine if @obj is-a @_typename.  @obj can refer to an
  * object or an interface associated with an object.
  *
  * Returns: This function returns @obj on success or #NULL on failure.
  */
-Object *object_dynamic_cast(Object *obj, const char *typename);
+Object *object_dynamic_cast(Object *obj, const char *_typename);
 
 /**
  * object_dynamic_cast_assert:
@@ -630,7 +630,7 @@ Object *object_dynamic_cast(Object *obj, const char *typename);
  * This function is not meant to be called directly, but only through
  * the wrapper macro OBJECT_CHECK.
  */
-Object *object_dynamic_cast_assert(Object *obj, const char *typename,
+Object *object_dynamic_cast_assert(Object *obj, const char *_typename,
                                    const char *file, int line, const char *func);
 
 /**
@@ -645,7 +645,7 @@ ObjectClass *object_get_class(Object *obj);
  * object_get_typename:
  * @obj: A derivative of #Object.
  *
- * Returns: The QOM typename of @obj.
+ * Returns: The QOM _typename of @obj.
  */
 const char *object_get_typename(Object *obj);
 
@@ -674,7 +674,7 @@ Type type_register(const TypeInfo *info);
 /**
  * object_class_dynamic_cast_assert:
  * @klass: The #ObjectClass to attempt to cast.
- * @typename: The QOM typename of the class to cast to.
+ * @_typename: The QOM _typename of the class to cast to.
  *
  * See object_class_dynamic_cast() for a description of the parameters
  * of this function.  The only difference in behavior is that this function
@@ -683,26 +683,26 @@ Type type_register(const TypeInfo *info);
  * the wrapper macros OBJECT_CLASS_CHECK and INTERFACE_CHECK.
  */
 ObjectClass *object_class_dynamic_cast_assert(ObjectClass *klass,
-                                              const char *typename,
+                                              const char *_typename,
                                               const char *file, int line,
                                               const char *func);
 
 /**
  * object_class_dynamic_cast:
  * @klass: The #ObjectClass to attempt to cast.
- * @typename: The QOM typename of the class to cast to.
+ * @_typename: The QOM _typename of the class to cast to.
  *
- * Returns: If @typename is a class, this function returns @klass if
- * @typename is a subtype of @klass, else returns #NULL.
+ * Returns: If @_typename is a class, this function returns @klass if
+ * @_typename is a subtype of @klass, else returns #NULL.
  *
- * If @typename is an interface, this function returns the interface
+ * If @_typename is an interface, this function returns the interface
  * definition for @klass if @klass implements it unambiguously; #NULL
  * is returned if @klass does not implement the interface or if multiple
  * classes or interfaces on the hierarchy leading to @klass implement
  * it.  (FIXME: perhaps this can be detected at type definition time?)
  */
 ObjectClass *object_class_dynamic_cast(ObjectClass *klass,
-                                       const char *typename);
+                                       const char *_typename);
 
 /**
  * object_class_get_parent:
@@ -714,9 +714,9 @@ ObjectClass *object_class_get_parent(ObjectClass *klass);
 
 /**
  * object_class_get_name:
- * @klass: The class to obtain the QOM typename for.
+ * @klass: The class to obtain the QOM _typename for.
  *
- * Returns: The QOM typename for @klass.
+ * Returns: The QOM _typename for @klass.
  */
 const char *object_class_get_name(ObjectClass *klass);
 
@@ -730,11 +730,11 @@ bool object_class_is_abstract(ObjectClass *klass);
 
 /**
  * object_class_by_name:
- * @typename: The QOM typename to obtain the class for.
+ * @_typename: The QOM _typename to obtain the class for.
  *
- * Returns: The class for @typename or %NULL if not found.
+ * Returns: The class for @_typename or %NULL if not found.
  */
-ObjectClass *object_class_by_name(const char *typename);
+ObjectClass *object_class_by_name(const char *_typename);
 
 void object_class_foreach(void (*fn)(ObjectClass *klass, void *opaque),
                           const char *implements_type, bool include_abstract,
@@ -1017,7 +1017,7 @@ Object *object_resolve_path(const char *path, bool *ambiguous);
 /**
  * object_resolve_path_type:
  * @path: the path to resolve
- * @typename: the type to look for.
+ * @_typename: the type to look for.
  * @ambiguous: returns true if the path resolution failed because of an
  *   ambiguous match
  *
@@ -1027,12 +1027,12 @@ Object *object_resolve_path(const char *path, bool *ambiguous);
  * ambiguous.
  *
  * For both partial and absolute paths, the return value goes through
- * a dynamic cast to @typename.  This is important if either the link,
- * or the typename itself are of interface types.
+ * a dynamic cast to @_typename.  This is important if either the link,
+ * or the _typename itself are of interface types.
  *
  * Returns: The matched object or NULL on path lookup failure.
  */
-Object *object_resolve_path_type(const char *path, const char *typename,
+Object *object_resolve_path_type(const char *path, const char *_typename,
                                  bool *ambiguous);
 
 /**

@@ -643,8 +643,11 @@ static inline void tcg_out_mov(TCGContext *s, TCGType type,
 static void tcg_out_movi(TCGContext *s, TCGType type,
                          TCGReg ret, tcg_target_long arg)
 {
-    tcg_target_long diff;
+#ifdef CONFIG_DBAF
 
+#else
+	tcg_target_long diff;
+#endif
     if (arg == 0) {
         tgen_arithr(s, ARITH_XOR, ret, ret);
         return;
@@ -659,7 +662,9 @@ static void tcg_out_movi(TCGContext *s, TCGType type,
         tcg_out32(s, arg);
         return;
     }
+#ifdef CONFIG_DBAF
 
+#else //may result in inconsistant
     /* Try a 7 byte pc-relative lea before the 10 byte movq.  */
     diff = arg - ((uintptr_t)s->code_ptr + 7);
     if (diff == (int32_t)diff) {
@@ -668,6 +673,7 @@ static void tcg_out_movi(TCGContext *s, TCGType type,
         tcg_out32(s, diff);
         return;
     }
+#endif
 
     tcg_out_opc(s, OPC_MOVL_Iv + P_REXW + LOWREGMASK(ret), 0, ret, 0);
     tcg_out64(s, arg);

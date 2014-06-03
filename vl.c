@@ -29,6 +29,8 @@
 #include <sys/time.h>
 
 #include "config-host.h"
+//DBAF
+#include "config-target.h"
 
 #ifdef CONFIG_SECCOMP
 #include "sysemu/seccomp.h"
@@ -117,7 +119,17 @@ int main(int argc, char **argv)
 #include "ui/qemu-spice.h"
 #include "qapi/string-input-visitor.h"
 #include "qom/object_interfaces.h"
-
+#ifdef CONFIG_DBAF
+#include "dbaf/DBAF_main.h"
+#include "dbaf/DBAF_qemu_mini.h"
+static void DBAF_cleanup(void)
+{
+    if(g_dbaf) {
+        DBAF_close(g_dbaf);
+        g_dbaf = NULL;
+    }
+}
+#endif
 #define DEFAULT_RAM_SIZE 128
 
 #define MAX_VIRTIO_CONSOLES 1
@@ -2978,6 +2990,10 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_VNC
     int show_vnc_port = 0;
 #endif
+#ifdef CONFIG_DBAF
+    const char *dbaf_config_file = NULL;
+    const char *load_bundle = NULL;
+#endif
     bool defconfig = true;
     bool userconfig = true;
     const char *log_mask = NULL;
@@ -3108,6 +3124,14 @@ int main(int argc, char **argv, char **envp)
                 qemu_opts_parse(olist, "kernel_irqchip=off", 0);
                 break;
             }
+#ifdef CONFIG_DBAF
+            case QEMU_OPTION_dbaf_config_file:
+				dbaf_config_file = optarg;
+				break;
+            case QEMU_OPTION_load_bundle:       // DECAF option
+                load_bundle = optarg;
+                break;
+#endif
             case QEMU_OPTION_cpu:
                 /* hw initialization will check this */
                 cpu_model = optarg;
@@ -4056,6 +4080,15 @@ int main(int argc, char **argv, char **envp)
     if (data_dir_idx < ARRAY_SIZE(data_dir)) {
         data_dir[data_dir_idx++] = CONFIG_QEMU_DATADIR;
     }
+#ifdef CONFIG_DBAF
+    if (!dbaf_config_file) {
+          fprintf(stderr, "Warning: DBAF configuration file was not specified, "
+                            "using the default (empty) file\n");
+        }
+        g_dbaf = DBAF_initialize(argc, argv,dbaf_config_file);
+        g_dbaf_state = DBAF_state_initialize();
+        atexit(DBAF_cleanup);
+#endif
 
     smp_parse(qemu_opts_find(qemu_find_opts("smp-opts"), NULL));
 
@@ -4535,6 +4568,12 @@ int main(int argc, char **argv, char **envp)
     rom_load_done();
 
     qemu_system_reset(VMRESET_SILENT);
+
+#ifdef CONFIG_DBAF
+    if (loadvm == NULL && load_bundle)
+        do_load_bundle_internal(cur_mon, load_bundle);
+#endif
+
     if (loadvm) {
         if (load_vmstate(loadvm) < 0) {
             autostart = 0;
@@ -4569,6 +4608,8 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_TPM
     tpm_cleanup();
 #endif
-
+#ifdef CONFIG_DBAF
+    DBAF_cleanup();
+#endif
     return 0;
 }

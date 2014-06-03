@@ -23,7 +23,11 @@
 #if !defined(CONFIG_USER_ONLY)
 #include "exec/softmmu_exec.h"
 #endif /* !defined(CONFIG_USER_ONLY) */
-
+#ifdef CONFIG_DBAF
+#include <dbaf/DBAF_qemu_mini.h>
+extern void dbaf_on_tlb_miss(CPUArchState* env,struct DBAF *dbaf, struct DBAFExecutionState* state, uint64_t addr, int is_write);
+extern void dbaf_on_page_fault(CPUArchState* env,struct DBAF *dbaf, struct DBAFExecutionState* state, uint64_t addr, int is_write);
+#endif
 /* broken thread support */
 
 static spinlock_t global_cpu_lock = SPIN_LOCK_UNLOCKED;
@@ -137,7 +141,11 @@ void tlb_fill(CPUState *cs, target_ulong addr, int is_write, int mmu_idx,
               uintptr_t retaddr)
 {
     int ret;
-
+#ifdef CONFIG_DBAF
+    X86CPU *cpu = X86_CPU(cs);
+    CPUX86State *env = &cpu->env;
+    dbaf_on_tlb_miss(env,g_dbaf, g_dbaf_state, addr, is_write);
+#endif
     ret = x86_cpu_handle_mmu_fault(cs, addr, is_write, mmu_idx);
     if (ret) {
         X86CPU *cpu = X86_CPU(cs);
@@ -147,6 +155,9 @@ void tlb_fill(CPUState *cs, target_ulong addr, int is_write, int mmu_idx,
             /* now we have a real cpu fault */
             cpu_restore_state(cs, retaddr);
         }
+#ifdef CONFIG_DBAF
+        dbaf_on_page_fault(env, g_dbaf, g_dbaf_state, addr, is_write);
+#endif
         raise_exception_err(env, cs->exception_index, env->error_code);
     }
 }

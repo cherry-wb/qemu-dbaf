@@ -14,7 +14,9 @@
 
 #include "qemu-common.h"
 #include "qemu/bitops.h"
-
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
 /*
  * The available bitmap operations and their rough meaning in the
  * case that the bitmap is a single unsigned long are thus:
@@ -91,10 +93,10 @@ int slow_bitmap_intersects(const unsigned long *bitmap1,
 static inline unsigned long *bitmap_new(long nbits)
 {
     long len = BITS_TO_LONGS(nbits) * sizeof(unsigned long);
-    return g_malloc0(len);
+    return (unsigned long *)g_malloc0(len);
 }
 
-static inline void bitmap_zero(unsigned long *dst, long nbits)
+static inline void bitmap_zero(unsigned long *dst, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         *dst = 0UL;
@@ -104,7 +106,7 @@ static inline void bitmap_zero(unsigned long *dst, long nbits)
     }
 }
 
-static inline void bitmap_fill(unsigned long *dst, long nbits)
+static inline void bitmap_fill(unsigned long *dst, unsigned long nbits)
 {
     size_t nlongs = BITS_TO_LONGS(nbits);
     if (!small_nbits(nbits)) {
@@ -115,7 +117,7 @@ static inline void bitmap_fill(unsigned long *dst, long nbits)
 }
 
 static inline void bitmap_copy(unsigned long *dst, const unsigned long *src,
-                               long nbits)
+		unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         *dst = *src;
@@ -126,7 +128,7 @@ static inline void bitmap_copy(unsigned long *dst, const unsigned long *src,
 }
 
 static inline int bitmap_and(unsigned long *dst, const unsigned long *src1,
-                             const unsigned long *src2, long nbits)
+                             const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return (*dst = *src1 & *src2) != 0;
@@ -135,7 +137,7 @@ static inline int bitmap_and(unsigned long *dst, const unsigned long *src1,
 }
 
 static inline void bitmap_or(unsigned long *dst, const unsigned long *src1,
-                             const unsigned long *src2, long nbits)
+                             const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         *dst = *src1 | *src2;
@@ -145,7 +147,7 @@ static inline void bitmap_or(unsigned long *dst, const unsigned long *src1,
 }
 
 static inline void bitmap_xor(unsigned long *dst, const unsigned long *src1,
-                              const unsigned long *src2, long nbits)
+                              const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         *dst = *src1 ^ *src2;
@@ -155,7 +157,7 @@ static inline void bitmap_xor(unsigned long *dst, const unsigned long *src1,
 }
 
 static inline int bitmap_andnot(unsigned long *dst, const unsigned long *src1,
-                                const unsigned long *src2, long nbits)
+                                const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return (*dst = *src1 & ~(*src2)) != 0;
@@ -165,7 +167,7 @@ static inline int bitmap_andnot(unsigned long *dst, const unsigned long *src1,
 
 static inline void bitmap_complement(unsigned long *dst,
                                      const unsigned long *src,
-                                     long nbits)
+                                     unsigned long  nbits)
 {
     if (small_nbits(nbits)) {
         *dst = ~(*src) & BITMAP_LAST_WORD_MASK(nbits);
@@ -175,7 +177,7 @@ static inline void bitmap_complement(unsigned long *dst,
 }
 
 static inline int bitmap_equal(const unsigned long *src1,
-                               const unsigned long *src2, long nbits)
+                               const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return ! ((*src1 ^ *src2) & BITMAP_LAST_WORD_MASK(nbits));
@@ -184,7 +186,7 @@ static inline int bitmap_equal(const unsigned long *src1,
     }
 }
 
-static inline int bitmap_empty(const unsigned long *src, long nbits)
+static inline int bitmap_empty(const unsigned long *src, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return ! (*src & BITMAP_LAST_WORD_MASK(nbits));
@@ -193,7 +195,7 @@ static inline int bitmap_empty(const unsigned long *src, long nbits)
     }
 }
 
-static inline int bitmap_full(const unsigned long *src, long nbits)
+static inline int bitmap_full(const unsigned long *src, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return ! (~(*src) & BITMAP_LAST_WORD_MASK(nbits));
@@ -203,7 +205,7 @@ static inline int bitmap_full(const unsigned long *src, long nbits)
 }
 
 static inline int bitmap_intersects(const unsigned long *src1,
-                                    const unsigned long *src2, long nbits)
+                                    const unsigned long *src2, unsigned long nbits)
 {
     if (small_nbits(nbits)) {
         return ((*src1 & *src2) & BITMAP_LAST_WORD_MASK(nbits)) != 0;
@@ -224,9 +226,11 @@ static inline unsigned long *bitmap_zero_extend(unsigned long *old,
                                                 long old_nbits, long new_nbits)
 {
     long new_len = BITS_TO_LONGS(new_nbits) * sizeof(unsigned long);
-    unsigned long *new = g_realloc(old, new_len);
-    bitmap_clear(new, old_nbits, new_nbits - old_nbits);
-    return new;
+    unsigned long *newitem = (unsigned long *)g_realloc(old, new_len);
+    bitmap_clear(newitem, old_nbits, new_nbits - old_nbits);
+    return newitem;
 }
-
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 #endif /* BITMAP_H */

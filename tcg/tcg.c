@@ -1230,7 +1230,21 @@ void tcg_dump_ops(TCGContext *s)
             nb_oargs = def->nb_oargs;
             nb_iargs = def->nb_iargs;
             nb_cargs = def->nb_cargs;
-        } else if (c == INDEX_op_call) {
+        }
+#ifdef CONFIG_DBAF
+        else if (c == INDEX_op_dbaf_start) {
+		   qemu_log(" dbaf_start");
+		   nb_oargs = def->nb_oargs;
+		   nb_iargs = def->nb_iargs;
+		   nb_cargs = def->nb_cargs;
+	   }else if (c == INDEX_op_dbaf_end) {
+		   qemu_log(" dbaf_end");
+		   nb_oargs = def->nb_oargs;
+		   nb_iargs = def->nb_iargs;
+		   nb_cargs = def->nb_cargs;
+	   }
+#endif
+        else if (c == INDEX_op_call) {
             TCGArg arg;
 
             /* variable number of arguments */
@@ -1326,6 +1340,116 @@ void tcg_dump_ops(TCGContext *s)
         args += nb_iargs + nb_oargs + nb_cargs;
     }
 }
+#ifdef CONFIG_DBAF
+void tcg_helper_get_reg_mask(TCGContext *s, void *func,
+                             uint64_t* reg_rmask, uint64_t* reg_wmask,
+                             uint64_t* accesses_mem);
+void tcg_helper_get_reg_mask(TCGContext *s, void *func,
+                             uint64_t* reg_rmask, uint64_t* reg_wmask,
+                             uint64_t* accesses_mem)
+{
+	//TODO
+	*reg_rmask = (uint64_t) -1;
+	*reg_wmask = (uint64_t) -1;
+	*accesses_mem = 0;
+}
+void tcg_calc_regmask(TCGContext *s, uint64_t *rmask, uint64_t *wmask,
+                      uint64_t *accesses_mem)
+{
+    tcg_calc_regmask_ex(s, rmask, wmask, accesses_mem, s->gen_opc_buf, s->gen_opparam_buf);
+}
+
+void tcg_calc_regmask_ex(TCGContext *s, uint64_t *rmask, uint64_t *wmask,
+                      uint64_t *accesses_mem, uint16_t *opc, TCGArg *opparam)
+{
+    const uint16_t *opc_ptr;
+    const TCGArg *args;
+    int c, i, nb_oargs, nb_iargs, nb_cargs;
+    const TCGOpDef *def;
+
+    uint64_t temps[TCG_MAX_TEMPS];
+    memset(temps, 0, sizeof(temps[0])*(s->nb_globals + s->nb_temps));
+
+    *rmask = *wmask = *accesses_mem = 0;
+
+    opc_ptr = opc;
+    args = opparam;
+    while (opc_ptr < s->gen_opc_ptr) {
+        c = *opc_ptr++;
+        def = &tcg_op_defs[c];
+
+        if (c == INDEX_op_call) {
+            TCGArg arg_count;
+
+            /* variable number of arguments */
+            arg_count = *args++;
+            nb_oargs = arg_count >> 16;
+            nb_iargs = arg_count & 0xffff;
+            nb_cargs = def->nb_cargs;
+
+            /* get information about helper register access mask */
+            TCGArg func_arg = args[nb_oargs + nb_iargs - 1];
+            assert(func_arg < s->nb_globals + s->nb_temps);
+
+            uint64_t func_rmask, func_wmask, func_accesses_mem;
+            tcg_helper_get_reg_mask(s, (void*) temps[func_arg],
+                                    &func_rmask, &func_wmask,
+                                    &func_accesses_mem);
+
+            *rmask |= func_rmask;
+            *wmask |= func_wmask;
+            *accesses_mem |= func_accesses_mem;
+
+            /* access mask of helper arguments will be added later */
+
+        } else if (c == INDEX_op_nopn) {
+
+            /* variable number of arguments */
+            nb_cargs = *args;
+            nb_oargs = 0;
+            nb_iargs = 0;
+
+        } else {
+
+            nb_oargs = def->nb_oargs;
+            nb_iargs = def->nb_iargs;
+            nb_cargs = def->nb_cargs;
+        }
+
+        /* We want to track movi assignments in order
+           to be able to determine target helper for call
+           instructions */
+        if (c == INDEX_op_movi_i32
+#if TCG_TARGET_REG_BITS == 64
+                   || c == INDEX_op_movi_i64
+#endif
+                   ) {
+            assert(args[0] < s->nb_globals + s->nb_temps);
+            temps[args[0]] = args[1];
+        } else {
+            for(i = 0; i < nb_oargs; i++)
+                temps[args[i]] = 0;
+        }
+
+        for(i = 0; i < nb_iargs; i++) {
+            TCGArg idx = args[nb_oargs + i];
+            if (idx < s->nb_globals) {
+                if ((*wmask & (1<<idx)) == 0)
+                    *rmask |= (1<<idx);
+            }
+        }
+
+        for(i = 0; i < nb_oargs; i++) {
+            TCGArg idx = args[i];
+            if (idx < s->nb_globals) {
+                *wmask |= (1<<idx);
+            }
+        }
+
+        args += nb_iargs + nb_oargs + nb_cargs;
+    }
+}
+#endif
 
 /* we give more priority to constraints with less registers */
 static int get_constraint_priority(const TCGOpDef *def, int k)
@@ -1609,6 +1733,10 @@ static void tcg_liveness_analysis(TCGContext *s)
             }
             break;
         case INDEX_op_debug_insn_start:
+#ifdef CONFIG_DBAF
+        case INDEX_op_dbaf_start:
+        case INDEX_op_dbaf_end:
+#endif
             args -= def->nb_args;
             break;
         case INDEX_op_nopn:
@@ -2512,6 +2640,7 @@ static inline int tcg_gen_code_common(TCGContext *s,
 {
     TCGOpcode opc;
     int op_index;
+    int ret_op_index = -1;
     const TCGOpDef *def;
     const TCGArg *args;
 
@@ -2584,6 +2713,10 @@ static inline int tcg_gen_code_common(TCGContext *s,
                                s->op_sync_args[op_index]);
             break;
         case INDEX_op_debug_insn_start:
+#ifdef CONFIG_DBAF
+        case INDEX_op_dbaf_start:
+        case INDEX_op_dbaf_end:
+#endif
             /* debug instruction */
             break;
         case INDEX_op_nop:
@@ -2622,8 +2755,9 @@ static inline int tcg_gen_code_common(TCGContext *s,
         }
         args += def->nb_args;
     next:
-        if (search_pc >= 0 && search_pc < tcg_current_code_size(s)) {
-            return op_index;
+        if (search_pc >= 0 && (search_pc < tcg_current_code_size(s)) && ret_op_index == -1) {
+        	ret_op_index = op_index;
+            //return op_index;
         }
         op_index++;
 #ifndef NDEBUG
@@ -2633,7 +2767,13 @@ static inline int tcg_gen_code_common(TCGContext *s,
  the_end:
     /* Generate TB finalization at the end of block */
     tcg_out_tb_finalize(s);
-    return -1;
+#ifdef CONFIG_DBAF
+    if(search_pc >= 0 && ((s->code_ptr - gen_code_buf) > s->tb_code_gen_size))//error
+    {
+    	qemu_log("ERROR detected diff=%ld\n",(long int)((s->code_ptr - gen_code_buf) - s->tb_code_gen_size));
+    }
+#endif
+    return ret_op_index;
 }
 
 int tcg_gen_code(TCGContext *s, tcg_insn_unit *gen_code_buf)

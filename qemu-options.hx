@@ -27,6 +27,13 @@ STEXI
 Display version information and exit
 ETEXI
 
+#ifdef CONFIG_DBAF
+DEF("dbaf-config-file", HAS_ARG, QEMU_OPTION_dbaf_config_file,
+    "dbaf-config-file   file      Path to DBAF configuration file\n", QEMU_ARCH_ALL)
+DEF("load_bundle", HAS_ARG, QEMU_OPTION_load_bundle,
+    "load_bundle   file      Path to bundle so file\n", QEMU_ARCH_ALL)
+#endif
+
 DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
     "-machine [type=]name[,prop[=value][,...]]\n"
     "                selects emulated machine ('-machine help' for list)\n"

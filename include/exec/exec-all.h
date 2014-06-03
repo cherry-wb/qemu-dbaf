@@ -59,7 +59,14 @@ typedef struct TranslationBlock TranslationBlock;
  * and up to 4 + N parameters on 64-bit archs
  * (N = number of input arguments + output arguments).  */
 #define MAX_OPC_PARAM (4 + (MAX_OPC_PARAM_PER_ARG * MAX_OPC_PARAM_ARGS))
+
+#ifdef CONFIG_TCG_SYM
+#define OPC_BUF_SIZE 6400
+#undef MAX_OP_PER_INSTR
+#define MAX_OP_PER_INSTR (OPC_BUF_SIZE - 374)
+#else
 #define OPC_BUF_SIZE 640
+#endif
 #define OPC_MAX_SIZE (OPC_BUF_SIZE - MAX_OP_PER_INSTR)
 
 /* Maximum size a TCG op can expand to.  This is complicated because a
@@ -135,7 +142,32 @@ static inline void tlb_flush(CPUState *cpu, int flush_global)
     || defined(CONFIG_TCG_INTERPRETER)
 #define USE_DIRECT_JUMP
 #endif
-
+#ifdef CONFIG_DBAF
+#ifdef __cplusplus
+namespace dbaf { class DBAFTBExtra; }
+using dbaf::DBAFTBExtra;
+#else
+struct DBAFTBExtra;
+#endif
+#endif
+#ifdef CONFIG_DBAF
+enum ETranslationBlockType
+{
+    TB_DEFAULT=0,
+    TB_JMP, TB_JMP_IND,
+    TB_COND_JMP, TB_COND_JMP_IND,
+    TB_CALL, TB_CALL_IND, TB_REP, TB_RET
+};
+enum EINSType
+{
+    INS_DEFAULT=0,
+    INS_IN, INS_OUT
+};
+enum JumpType
+{
+    JT_RET, JT_LRET
+};
+#endif
 struct TranslationBlock {
     target_ulong pc;   /* simulated PC corresponding to this block (EIP + CS base) */
     target_ulong cs_base; /* CS base for this block */
@@ -169,6 +201,19 @@ struct TranslationBlock {
     struct TranslationBlock *jmp_next[2];
     struct TranslationBlock *jmp_first;
     uint32_t icount;
+#ifdef CONFIG_DBAF
+    uint8_t *tc_start_ptr;    /* pointer to the translated code start point */
+    int tc_code_size;		  /* size of the translated code*/
+    uint64_t reg_rmask; /* Registers that TB reads (before overwritting) */
+    uint64_t reg_wmask; /* Registers that TB writes */
+    uint64_t helper_accesses_mem; /* True if contains helpers that access mem */
+
+    enum ETranslationBlockType dbaf_tb_type;
+    enum EINSType dbaf_tb_current_ins_type;
+    struct DBAFTBExtra* dbaf_extra;
+    struct TranslationBlock*dbaf_tb_next[2];
+    uint64_t pcOfLastInstr; /* XXX: hack for call instructions */
+#endif
 };
 
 #include "exec/spinlock.h"
@@ -278,7 +323,7 @@ static inline void tb_set_jmp_target(TranslationBlock *tb,
                                      int n, uintptr_t addr)
 {
     uint16_t offset = tb->tb_jmp_offset[n];
-    tb_set_jmp_target1((uintptr_t)(tb->tc_ptr + offset), addr);
+    tb_set_jmp_target1((uintptr_t)(((uint8_t *)tb->tc_ptr) + offset), addr);
 }
 
 #else

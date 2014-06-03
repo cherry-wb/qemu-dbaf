@@ -554,6 +554,9 @@ struct TCGContext {
 
     /* The TCGBackendData structure is private to tcg-target.c.  */
     struct TCGBackendData *be;
+#ifdef CONFIG_DBAF
+    int tb_code_gen_size; //for debug search_pc, used for record orignal generate code size
+#endif
 };
 
 extern TCGContext tcg_ctx;
@@ -756,7 +759,7 @@ TCGv_i64 tcg_const_local_i64(int64_t val);
 
 static inline ptrdiff_t tcg_ptr_byte_diff(void *a, void *b)
 {
-    return a - b;
+    return (tcg_insn_unit *)a - (tcg_insn_unit *)b;
 }
 
 /**
@@ -923,5 +926,13 @@ void helper_stl_mmu(CPUArchState *env, target_ulong addr,
 void helper_stq_mmu(CPUArchState *env, target_ulong addr,
                     uint64_t val, int mmu_idx);
 #endif /* CONFIG_SOFTMMU */
+
+#ifdef CONFIG_DBAF
+void tcg_calc_regmask_ex(TCGContext *s, uint64_t *rmask, uint64_t *wmask,
+                      uint64_t *accesses_mem, uint16_t *opc, TCGArg *opparam);
+
+void tcg_calc_regmask(TCGContext *s, uint64_t *rmask, uint64_t *wmask,
+                      uint64_t *accesses_mem);
+#endif
 
 #endif /* TCG_H */

@@ -107,6 +107,12 @@ compile_prog() {
   do_cc $QEMU_CFLAGS $local_cflags -o $TMPE $TMPC $LDFLAGS $local_ldflags
 }
 
+compile_prog_cxx() {
+  local_cxxflags="$1"
+  local_ldflags="$2"
+  $cxx $QEMU_CFLAGS $QEMU_CXXFLAGS $local_cxxflags -o $TMPE $TMPCXX $LDFLAGS $local_ldflags > /dev/null 2> /dev/null
+}
+
 do_libtool() {
     local mode=$1
     shift
@@ -216,6 +222,10 @@ unset target_list
 # Always add --enable-foo and --disable-foo command line args.
 # Distributions want to ensure that several features are compiled in, and it
 # is impossible without a --enable-foo that exits if a feature is not found.
+#DBAF
+enable_dbaf="yes"
+enable_tcg_symbolic_execution="yes"
+debug_dbaf="yes"
 
 bluez=""
 brlapi=""
@@ -237,7 +247,7 @@ vnc_sasl=""
 vnc_jpeg=""
 vnc_png=""
 vnc_ws=""
-xen=""
+xen="no"
 xen_ctrl_version=""
 xen_pci_passthrough=""
 linux_aio=""
@@ -396,7 +406,13 @@ QEMU_CFLAGS="-fno-strict-aliasing -fno-common $QEMU_CFLAGS"
 QEMU_CFLAGS="-Wall -Wundef -Wwrite-strings -Wmissing-prototypes $QEMU_CFLAGS"
 QEMU_CFLAGS="-Wstrict-prototypes -Wredundant-decls $QEMU_CFLAGS"
 QEMU_CFLAGS="-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $QEMU_CFLAGS"
-QEMU_INCLUDES="-I. -I\$(SRC_PATH) -I\$(SRC_PATH)/include"
+
+# DBAF - C++ specific flags
+QEMU_INCLUDES="-I. -I\$(SRC_PATH) -I\$(SRC_PATH)/include -I\$(SRC_PATH)/dbaf"
+QEMU_CXXFLAGS="-fno-strict-aliasing -Wall -Wundef -Wwrite-strings -Wredundant-decls -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_FORTIFY_SOURCE=2"
+# DBAF - Adding -rdynamic to export QEMU global variables out to the plugins
+LDFLAGS="-rdynamic"
+
 if test "$debug_info" = "yes"; then
     CFLAGS="-g $CFLAGS"
     LDFLAGS="-g $LDFLAGS"
@@ -1094,6 +1110,18 @@ for opt do
   ;;
   --enable-quorum) quorum="yes"
   ;;
+   # DBAF - TCG symbolic execution
+  --enable-tcg-sym) enable_tcg_symbolic_execution="yes"
+  ;;
+  --disable-tcg-sym) enable_tcg_symbolic_execution="no"
+  ;;
+  # DBAF - dbaf support
+  --enable-dbaf) enable_dbaf="yes"
+  ;;
+  --disable-dbaf) enable_dbaf="no"
+  ;;
+  --disable-debug-dbaf) debug_dbaf="no"
+  ;;
   *)
       echo "ERROR: unknown option $opt"
       echo "Try '$0 --help' for more information"
@@ -1360,7 +1388,11 @@ Advanced options (experts only):
   --enable-vhdx            enable support for the Microsoft VHDX image format
   --disable-quorum         disable quorum block filter support
   --enable-quorum          enable quorum block filter support
-
+  --disable-dbaf           disable dynamic binary analysis support
+  --enable-dbaf            enable dynamic binary analysis support
+  --disable-debug-dbaf     disable debug dynamic binary analysis support
+  --disable-tcg-sym        disable tcg symbolic execution support
+  --enable-tcg-sym         enable tcg symbolic execution support  
 NOTE: The object files are built at the place where configure is launched
 EOF
 exit 0
@@ -1438,6 +1470,9 @@ gcc_flags="-Wmissing-include-dirs -Wempty-body -Wnested-externs $gcc_flags"
 gcc_flags="-Wendif-labels $gcc_flags"
 gcc_flags="-Wno-initializer-overrides $gcc_flags"
 gcc_flags="-Wno-string-plus-int $gcc_flags"
+# DBAF - CPP flags
+cpp_flags="-Wtype-limits -Wformat-security -Wformat-y2k -Winit-self -Wignored-qualifiers -Wmissing-include-dirs -Wempty-body -fstack-protector-all -Wendif-labels"
+
 # Note that we do not add -Werror to gcc_flags here, because that would
 # enable it for all configure tests. If a configure test failed due
 # to -Werror this would just silently disable some features,
@@ -1454,7 +1489,12 @@ for flag in $gcc_flags; do
 	QEMU_CFLAGS="$QEMU_CFLAGS $flag"
     fi
 done
-
+# DBAF - CPP flags
+for flag in $cpp_flags; do
+    if compile_prog "$flag -Werror" "" ; then
+        QEMU_CXXFLAGS="$QEMU_CXXFLAGS $flag"
+    fi
+done
 if test "$stack_protector" != "no" ; then
   gcc_flags="-fstack-protector-strong -fstack-protector-all"
   for flag in $gcc_flags; do
@@ -1773,7 +1813,8 @@ if test "$seccomp" != "no" ; then
 fi
 ##########################################
 # xen probe
-
+# DBAF - Force XEN off (no support)
+xen="no"
 if test "$xen" != "no" ; then
   xen_libs="-lxenstore -lxenctrl -lxenguest"
 
@@ -2650,7 +2691,7 @@ done
 if test "$modules" = yes; then
     shacmd_probe="sha1sum sha1 shasum"
     for c in $shacmd_probe; do
-        if which $c >/dev/null 2>&1; then
+        if which $c &>/dev/null; then
             shacmd="$c"
             break
         fi
@@ -2710,6 +2751,42 @@ EOF
     cap=yes
   else
     cap=no
+  fi
+fi
+
+##########################################
+# DBAF probe: lua
+
+if test "$enable_dbaf" != "no" ; then
+  cat > $TMPCXX << EOF
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
+int main(void) { lua_State *L = lua_open(); lua_close(L); return 0; }
+EOF
+  if [ "$mingw32" = "yes" ]; then
+    lua_libs="-llua"
+  else
+    if pkg-config --exists lua5.1 ; then
+        lua_pkg="lua5.1"
+    else
+        lua_pkg="lua"
+    fi
+    lua_cxxflags=`pkg-config $lua_pkg --cflags 2> /dev/null`
+    lua_libs=`pkg-config $lua_pkg --libs 2> /dev/null`
+    #echo "$lua_cxxflags $lua_libs"
+	QEMU_CXXFLAGS="$QEMU_CXXFLAGS $lua_cxxflags"
+	QEMU_CFLAGS="$QEMU_CFLAGS $lua_cxxflags"
+	LIBS="$LIBS $lua_libs"
+  fi
+
+  if compile_prog_cxx "$lua_cxxflags" "$lua_libs" ; then
+    : LUA found
+  else
+    feature_not_found "lua (required for s2e)"
+    exit 1
   fi
 fi
 
@@ -3455,6 +3532,19 @@ if test "$darwin" != "yes" -a "$mingw32" != "yes" -a "$solaris" != yes -a \
     libs_softmmu="-lutil $libs_softmmu"
 fi
 
+# DBAF - Check if we need libbfd
+#cat > $TMPC <<EOF
+##include <bfd.h>
+#int main(void) { bfd_error my_error; my_error = bfd_get_error(); }
+#EOF
+
+#if compile_prog "" "" ; then
+#  :
+#elif compile_prog "" "-lbfd" ; then
+#  LIBS="-lbfd $LIBS"
+#fi
+LIBS="-lbfd $LIBS"
+
 ##########################################
 # spice probe
 if test "$spice" != "no" ; then
@@ -4104,7 +4194,9 @@ echo "Objective-C compiler $objcc"
 echo "ARFLAGS           $ARFLAGS"
 echo "CFLAGS            $CFLAGS"
 echo "QEMU_CFLAGS       $QEMU_CFLAGS"
+echo "QEMU_CXXFLAGS     $QEMU_CXXFLAGS"
 echo "LDFLAGS           $LDFLAGS"
+echo "LIBS              $LIBS"
 echo "make              $make"
 echo "install           $install"
 echo "python            $python"
@@ -4208,7 +4300,9 @@ echo "vhdx              $vhdx"
 echo "Quorum            $quorum"
 echo "lzo support       $lzo"
 echo "snappy support    $snappy"
-
+echo "dbaf support      $enable_dbaf"
+echo "dbaf debug support    $debug_dbaf"
+echo "tcg symbolic execution support    $enable_tcg_symbolic_execution"
 if test "$sdl_too_old" = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have SDL support"
 fi
@@ -4831,10 +4925,16 @@ target_softmmu="no"
 target_user_only="no"
 target_linux_user="no"
 target_bsd_user="no"
+target_dbaf="no"
 case "$target" in
   ${target_name}-softmmu)
     target_softmmu="yes"
     ;;
+#DBAF
+	${target_name}-dbaf-softmmu)
+	target_softmmu="yes"
+	target_dbaf="yes"
+	;;
   ${target_name}-linux-user)
     if test "$linux" != "yes" ; then
       error_exit "Target '$target' is only available on a Linux host"
@@ -4850,7 +4950,7 @@ case "$target" in
     target_bsd_user="yes"
     ;;
   *)
-    error_exit "Target '$target' not recognised"
+    error_exit "Target '$target' not recognised. target_name = ${target_name}"
     exit 1
     ;;
 esac
@@ -4969,7 +5069,17 @@ if [ "$TARGET_BASE_ARCH" = "" ]; then
 fi
 
 symlink "$source_path/Makefile.target" "$target_dir/Makefile"
-
+if test "$target_dbaf" = "yes"; then
+  DBAF_DIRS="dbaf"
+  DBAF_DIRS="$DBAF_DIRS dbaf/utils"
+  DBAF_DIRS="$DBAF_DIRS dbaf/signals"
+  DBAF_DIRS="$DBAF_DIRS dbaf/plugins"
+  DBAF_DIRS="$DBAF_DIRS dbaf/tainting"
+  DBAF_DIRS="$DBAF_DIRS dbaf/symexecution"
+  for dir in $DBAF_DIRS ; do
+    mkdir -p $target_dir/$dir
+  done
+fi
 upper() {
     echo "$@"| LC_ALL=C tr '[a-z]' '[A-Z]'
 }
@@ -5159,6 +5269,21 @@ fi
 echo "LDFLAGS+=$ldflags" >> $config_target_mak
 echo "QEMU_CFLAGS+=$cflags" >> $config_target_mak
 
+# DBAF - Add in C++ personality lib to get C++ built-in STL
+echo "QEMU_INCLUDES+=$includes" >> $config_target_mak
+#DBAF - DBAF enable
+# cherry 在这里可以配置需要的编译选项，比如头文件搜索目录
+if test "$target_dbaf" = "yes" ; then
+  echo "CONFIG_DBAF=y" >> $config_target_mak
+  if test "$debug_dbaf" = "yes" ; then
+    echo "CONFIG_DEBUG_DBAF=y" >> $config_target_mak
+  fi
+  if test "$enable_tcg_symbolic_execution" = "yes" ; then
+    echo "CONFIG_TCG_SYM=y" >> $config_target_mak
+  fi
+  echo "DBAF_CXXFLAGS:=$lua_cxxflags" >> $config_target_mak
+fi
+
 done # for target in $targets
 
 if [ "$pixman" = "internal" ]; then
@@ -5176,6 +5301,8 @@ fi
 # build tree in object directory in case the source is not in the current directory
 DIRS="tests tests/tcg tests/tcg/cris tests/tcg/lm32 tests/libqos tests/qapi-schema tests/tcg/xtensa tests/qemu-iotests"
 DIRS="$DIRS fsdev"
+# DBAF
+DIRS="$DIRS dbaf"
 DIRS="$DIRS pc-bios/optionrom pc-bios/spapr-rtas pc-bios/s390-ccw"
 DIRS="$DIRS roms/seabios roms/vgabios"
 DIRS="$DIRS qapi-generated"

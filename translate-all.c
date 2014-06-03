@@ -59,7 +59,10 @@
 #include "exec/cputlb.h"
 #include "translate-all.h"
 #include "qemu/timer.h"
-
+#ifdef CONFIG_DBAF
+extern void dbaf_tb_alloc(struct TranslationBlock *tb);
+extern void dbaf_tb_free(struct TranslationBlock *tb);
+#endif
 //#define DEBUG_TB_INVALIDATE
 //#define DEBUG_FLUSH
 /* make various TB consistency checks */
@@ -186,11 +189,15 @@ int cpu_gen_code(CPUArchState *env, TranslationBlock *tb, int *gen_code_size_ptr
 
 #ifdef DEBUG_DISAS
     if (qemu_loglevel_mask(CPU_LOG_TB_OUT_ASM)) {
-        qemu_log("OUT: [size=%d]\n", gen_code_size);
+        qemu_log("OUT: [start_pc=%p] [size=%d]\n", tb->tc_ptr, gen_code_size);
         log_disas(tb->tc_ptr, gen_code_size);
         qemu_log("\n");
         qemu_log_flush();
     }
+#ifdef CONFIG_DBAF
+    tb->tc_start_ptr = tb->tc_ptr;
+    tb->tc_code_size = gen_code_size;
+#endif
 #endif
     return 0;
 }
@@ -235,8 +242,12 @@ static int cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
     s->tb_jmp_offset = NULL;
     s->tb_next = tb->tb_next;
 #endif
-    j = tcg_gen_code_search_pc(s, (tcg_insn_unit *)tc_ptr,
-                               searched_pc - tc_ptr);
+#ifdef CONFIG_DBAF
+    s->tb_code_gen_size = tb->tc_code_size;
+    j = tcg_gen_code_search_pc(s, (tcg_insn_unit *)tc_ptr, searched_pc - tc_ptr);
+#else
+    j = tcg_gen_code_search_pc(s, (tcg_insn_unit *)tc_ptr, searched_pc - tc_ptr);
+#endif
     if (j < 0)
         return -1;
     /* now find start of instruction before */
@@ -247,6 +258,14 @@ static int cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
 
     restore_state_to_opc(env, tb, j);
 
+#ifdef DEBUG_DISAS
+    if (qemu_loglevel_mask(CPU_LOG_TB_OUT_ASM)) {
+        qemu_log("RESTORE OUT: [start_pc=%p] [size=%ld]\n", tb->tc_ptr, (s->code_ptr - s->code_buf));
+        log_disas(tb->tc_ptr, (s->code_ptr - s->code_buf));
+        qemu_log("\n");
+        qemu_log_flush();
+    }
+#endif
 #ifdef CONFIG_PROFILER
     s->restore_time += profile_getclock() - ti;
     s->restore_count++;
@@ -721,6 +740,9 @@ static TranslationBlock *tb_alloc(target_ulong pc)
     tb = &tcg_ctx.tb_ctx.tbs[tcg_ctx.tb_ctx.nb_tbs++];
     tb->pc = pc;
     tb->cflags = 0;
+#ifdef CONFIG_DBAF
+    dbaf_tb_alloc(tb);
+#endif
     return tb;
 }
 
@@ -733,6 +755,9 @@ void tb_free(TranslationBlock *tb)
             tb == &tcg_ctx.tb_ctx.tbs[tcg_ctx.tb_ctx.nb_tbs - 1]) {
         tcg_ctx.code_gen_ptr = tb->tc_ptr;
         tcg_ctx.tb_ctx.nb_tbs--;
+#if defined(CONFIG_DBAF)
+        dbaf_tb_free(tb);
+#endif
     }
 }
 
@@ -1038,6 +1063,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 {
     CPUArchState *env = cpu->env_ptr;
     TranslationBlock *tb;
+    uint8_t *tc_ptr;
     tb_page_addr_t phys_pc, phys_page2;
     target_ulong virt_page2;
     int code_gen_size;
@@ -1052,7 +1078,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         /* Don't forget to invalidate previous TB info.  */
         tcg_ctx.tb_ctx.tb_invalidated_flag = 1;
     }
-    tb->tc_ptr = tcg_ctx.code_gen_ptr;
+    tc_ptr = tcg_ctx.code_gen_ptr;
+    tb->tc_ptr = tc_ptr;
     tb->cs_base = cs_base;
     tb->flags = flags;
     tb->cflags = cflags;

@@ -105,6 +105,16 @@ static void cpu_exec_nocache(CPUArchState *env, int max_cycles,
                      max_cycles);
     cpu->current_tb = tb;
     /* execute the generated code */
+#ifdef DEBUG_DISAS
+#ifdef CONFIG_DBAF
+    if (qemu_loglevel_mask(CPU_LOG_EXEC_ASM)) {
+        qemu_log("EXEC ASM: [size=%d]\n", tb->tc_code_size);
+        log_disas(tb->tc_start_ptr, tb->tc_code_size);
+        qemu_log("\n");
+        qemu_log_flush();
+    }
+#endif
+#endif
     cpu_tb_exec(cpu, tb->tc_ptr);
     cpu->current_tb = NULL;
     tb_phys_invalidate(tb, -1);
@@ -638,6 +648,16 @@ int cpu_exec(CPUArchState *env)
                 barrier();
                 if (likely(!cpu->exit_request)) {
                     tc_ptr = tb->tc_ptr;
+#ifdef DEBUG_DISAS
+#ifdef CONFIG_DBAF
+    if (qemu_loglevel_mask(CPU_LOG_EXEC_ASM)) {
+		qemu_log("EXEC ASM: [size=%d]\n", tb->tc_code_size);
+		log_disas(tb->tc_start_ptr, tb->tc_code_size);
+		qemu_log("\n");
+		qemu_log_flush();
+    }
+#endif
+#endif
                     /* execute the generated code */
                     next_tb = cpu_tb_exec(cpu, tc_ptr);
                     switch (next_tb & TB_EXIT_MASK) {

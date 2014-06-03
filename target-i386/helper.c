@@ -25,6 +25,10 @@
 #include "monitor/monitor.h"
 #endif
 
+#ifdef CONFIG_DBAF
+#include <dbaf/DBAF_qemu_mini.h>
+extern void dbaf_on_page_directory_change(CPUArchState* env,uint64_t previous, uint64_t current);
+#endif
 //#define DEBUG_MMU
 
 static void cpu_x86_version(CPUX86State *env, int *family, int *model)
@@ -449,7 +453,9 @@ void cpu_x86_update_cr0(CPUX86State *env, uint32_t new_cr0)
 void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
 {
     X86CPU *cpu = x86_env_get_cpu(env);
-
+#ifdef CONFIG_DBAF
+    dbaf_on_page_directory_change(env, env->cr[3], new_cr3);
+#endif
     env->cr[3] = new_cr3;
     if (env->cr[0] & CR0_PG_MASK) {
 #if defined(DEBUG_MMU)

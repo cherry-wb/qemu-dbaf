@@ -2502,7 +2502,28 @@ static inline void tcg_gen_debug_insn_start(uint64_t pc)
     tcg_gen_op1i(INDEX_op_debug_insn_start, pc);
 #endif
 }
-
+#ifdef CONFIG_DBAF
+static inline void tcg_gen_dbaf_start(uint64_t pc)
+{
+    /* XXX: must really use a 32 bit size for TCGArg in all cases */
+#if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
+    tcg_gen_op2ii(INDEX_op_dbaf_start,
+                  (uint32_t)(pc), (uint32_t)(pc >> 32));
+#else
+    tcg_gen_op1i(INDEX_op_dbaf_start, pc);
+#endif
+}
+static inline void tcg_gen_dbaf_end(uint64_t pc)
+{
+    /* XXX: must really use a 32 bit size for TCGArg in all cases */
+#if TARGET_LONG_BITS > TCG_TARGET_REG_BITS
+    tcg_gen_op2ii(INDEX_op_dbaf_end,
+                  (uint32_t)(pc), (uint32_t)(pc >> 32));
+#else
+    tcg_gen_op1i(INDEX_op_dbaf_end, pc);
+#endif
+}
+#endif
 static inline void tcg_gen_exit_tb(uintptr_t val)
 {
     tcg_gen_op1i(INDEX_op_exit_tb, val);
