@@ -30,23 +30,31 @@
 .help       = "Disable the fpath DBAF bundle",
 .mhandler.cmd_new = do_disable_bundle,
 },
-//
-///* operating system information */
-//{
-//	.name		= "guest_ps",
-//	.args_type	= "",
-//	.mhandler.cmd = do_guest_ps,
-//	.params		= "",
-//	.help		= "list the processes on guest system"
-//},
-//{
-//	.name		= "guest_modules",
-//	.args_type	= "pid:i",
-//	.mhandler.cmd	= do_guest_modules,
-//	.params		= "pid",
-//	.help		= "list the modules of the process with <pid>"
-//},
-//
+
+/* operating system information */
+{
+	.name		= "guest_ps",
+	.args_type	= "",
+	.mhandler.cmd = do_guest_ps,
+	.params		= "",
+	.help		= "list the processes on guest system"
+},
+{
+	.name		= "guest_modules",
+	.args_type	= "pid:i",
+	.mhandler.cmd	= do_guest_modules,
+	.params		= "pid",
+	.help		= "list the modules of the process with <pid>"
+},
+
+{
+	.name		= "guest_module_functions",
+	.args_type	= "module:S",
+	.mhandler.cmd	= do_module_functions,
+	.params		= "module",
+	.help		= "list the functions of the module"
+},
+
 //#ifdef CONFIG_TCG_SYM
 ///* TCG tainting commands */
 //{

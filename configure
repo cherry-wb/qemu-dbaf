@@ -5074,6 +5074,7 @@ if test "$target_dbaf" = "yes"; then
   DBAF_DIRS="$DBAF_DIRS dbaf/utils"
   DBAF_DIRS="$DBAF_DIRS dbaf/signals"
   DBAF_DIRS="$DBAF_DIRS dbaf/plugins"
+  DBAF_DIRS="$DBAF_DIRS dbaf/plugins/OShelper"
   DBAF_DIRS="$DBAF_DIRS dbaf/tainting"
   DBAF_DIRS="$DBAF_DIRS dbaf/symexecution"
   for dir in $DBAF_DIRS ; do

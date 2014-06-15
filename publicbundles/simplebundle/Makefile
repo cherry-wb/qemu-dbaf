@@ -20,6 +20,7 @@ LIBS+=
 
 OBJS+= simplebundle.o bundle_interface.o plugins/SimpleBundlePlugin.o
 OBJS+= plugins/BasicBlockSignalPlugin.o
+OBJS+= plugins/Kernel32Hooker.o
 all: simplebundle.so
 
 SHARED_LIBS+=

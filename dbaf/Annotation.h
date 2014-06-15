@@ -1,5 +1,5 @@
-#ifndef S2E_PLUGINS_FUNCSKIPPER_H
-#define S2E_PLUGINS_FUNCSKIPPER_H
+#ifndef DBAF_PLUGINS_ANNOTATION_H
+#define DBAF_PLUGINS_ANNOTATION_H
 
 #include <ConfigFile.h>
 #include "DBAF.h"

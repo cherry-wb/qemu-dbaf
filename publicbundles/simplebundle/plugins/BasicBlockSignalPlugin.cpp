@@ -27,13 +27,12 @@ void BasicBlockSignalPlugin::initialize() {
 	dbaf()->getDebugStream()<< "BasicBlockSignalPlugin::initialize" << endl;
 	dbaf()->getCorePlugin()->onTranslateBlockStart.connect(fsigc::mem_fun(*this, &BasicBlockSignalPlugin::slotTranslateBlockStart));
 	dbaf()->getCorePlugin()->onTranslateBlockEnd.connect(fsigc::mem_fun(*this, &BasicBlockSignalPlugin::slotTranslateBlockEnd));
-	isenabled = true;
 }
 void BasicBlockSignalPlugin::slotTranslateBlockStart(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,
                                                    TranslationBlock *tb,
                                                    uint64_t pc){
-	if(isenabled)
+	if(isEnabled())
 	{
 		dbaf()->getDebugStream()<< "TranslateBlockStart pc=" << std::hex << pc << endl;
 		signal->connect(fsigc::mem_fun(*this,&BasicBlockSignalPlugin::onBlockStartExecution));
@@ -43,7 +42,7 @@ void BasicBlockSignalPlugin::slotTranslateBlockEnd(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,
                                                    TranslationBlock *tb,
                                                    uint64_t pc, bool is_static_target, uint64_t static_target_pc){
-	if(isenabled)
+	if(isEnabled())
 	{
 		dbaf()->getDebugStream()<< "TranslateBlockEnd pc=" << std::hex << pc << endl;
 		signal->connect(fsigc::mem_fun(*this,&BasicBlockSignalPlugin::onBlockEndExecution));

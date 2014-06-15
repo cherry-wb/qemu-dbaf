@@ -165,17 +165,19 @@ $(call set-vpath, $(SRC_PATH))
 dbafobj-y += dbaf/signals/signals.o 
 dbafobj-y += dbaf/utils/Output.o
 dbafobj-y += dbaf/utils/HashtableWrapper.o
-
+dbafobj-y += dbaf/Synchronization.o
 dbafobj-y += dbaf/DBAF.o dbaf/DBAFExecutionState.o dbaf/Plugin.o
 dbafobj-y += dbaf/plugins/CorePlugin.o
 dbafobj-y += dbaf/Annotation.o
 dbafobj-y += dbaf/ConfigFile.o 
 dbafobj-y += dbaf/plugins/SignalTesterPlugin.o
 dbafobj-y += dbaf/DBAF_main.o
+dbafobj-y += dbaf/DBAF_qemu_memory.o
+dbafobj-y += dbaf/plugins/OSMonitor.o dbaf/plugins/OShelper/function_map.o dbaf/plugins/WindowsMonitor.o 
+dbafobj-y += dbaf/plugins/X86FunctionMonitor.o dbaf/plugins/ModuleExecutionDetector.o dbaf/plugins/X86HookManager.o
 #dbafobj-y += dbaf/DBAF_callback.o dbaf/DBAF_cmds.o
 #dbafobj-y += dbaf/hookapi.o dbaf/windows_vmi.o dbaf/vmi.o dbaf/vmi_c_wrapper.o
 #dbafobj-y += dbaf/linux_procinfo.o dbaf/linux_readelf.o dbaf/linux_vmi.o
-#dbafobj-y += dbaf/function_map.o
 #dbafobj-y +=dbaf/tainting/reduce_taint.o dbaf/tainting/taintcheck_opt.o dbaf/tainting/tainting.o
 #dbafobj-y +=dbaf/tainting/taint_memory.o dbaf/tainting/analysis_log.o
 #dbafobj-y +=dbaf/tainting/tcg_taint.o

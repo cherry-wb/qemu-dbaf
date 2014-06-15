@@ -1,25 +1,3 @@
-/*
-Copyright (C) <2012> <Syracuse System Security (Sycure) Lab>
-
-DBAF is based on QEMU, a whole-system emulator. You can redistribute
-and modify it under the terms of the GNU LGPL, version 2.1 or later,
-but it is made available WITHOUT ANY WARRANTY. See the top-level
-README file for more details.
-
-For more information about DBAF and other softwares, see our
-web site at:
-http://sycurelab.ecs.syr.edu/
-
-If you have any questions about DBAF,please post it on
-http://code.google.com/p/dbaf-platform/
-*/
-/*
- * Output.h
- *
- *  Created on: Sep 29, 2011
- *      Author: lok
- */
-
 #ifndef OUTPUT_H_
 #define OUTPUT_H_
 

@@ -25,6 +25,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.411836081" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<option id="gnu.cpp.compiler.option.include.paths.2057701658" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="/usr/lib/gcc/x86_64-linux-gnu/4.6/include"/>
+									<listOptionValue builtIn="false" value="/usr/include/glib-2.0"/>
 									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/"/>
 									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/backward"/>
 									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/x86_64-linux-gnu"/>
@@ -33,12 +35,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/aidecheatfolder}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/target-i386}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/dbaf}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/roms/SLOF/lib/libc/include}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.227917764" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.672568194" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.include.paths.800622610" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="/usr/include/glib-2.0"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/aidecheatfolder}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/target-i386}&quot;"/>
@@ -58,6 +61,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="roms/*" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

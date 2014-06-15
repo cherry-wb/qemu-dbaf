@@ -63,11 +63,11 @@ void simplebundle_cleanup_internal() {
 }
 void simplebundle_enable_internal() {
 	fprintf(stderr, "simplebundle is enable\n");
-	//g_dbaf->getPlugin("SimpleBundlePlugin")->Enable();
-	//g_dbaf->getPlugin("BasicBlockSignalPlugin")->Enable();
+	g_dbaf->getPlugin("SimpleBundlePlugin")->Enable();
+	g_dbaf->getPlugin("BasicBlockSignalPlugin")->Enable();
 }
 void simplebundle_disable_internal() {
 	fprintf(stderr, "simplebundle is disable\n");
-	//g_dbaf->getPlugin("SimpleBundlePlugin")->Disable();
-	//g_dbaf->getPlugin("BasicBlockSignalPlugin")->Disable();
+	g_dbaf->getPlugin("SimpleBundlePlugin")->Disable();
+	g_dbaf->getPlugin("BasicBlockSignalPlugin")->Disable();
 }

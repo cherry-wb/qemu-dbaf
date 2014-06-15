@@ -27,14 +27,13 @@ void SimpleBundlePlugin::initialize() {
 	dbaf()->getDebugStream()<< "SimpleBundlePlugin::initialize" << endl;
 	dbaf()->getCorePlugin()->onTranslateInstructionStart.connect(fsigc::mem_fun(*this, &SimpleBundlePlugin::slotTranslateInstructionStart));
 	dbaf()->getCorePlugin()->onTranslateInstructionEnd.connect(fsigc::mem_fun(*this, &SimpleBundlePlugin::slotTranslateInstructionEnd));
-	isenabled = true;
 }
 void SimpleBundlePlugin::slotTranslateInstructionStart(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,
                                                    TranslationBlock *tb,
                                                    uint64_t pc)
 {
-	if(isenabled)
+	if(isEnabled())
 	{
 		dbaf()->getDebugStream()<< "TranslateInstructionStart pc=" << std::hex << pc << endl;
 		signal->connect(fsigc::mem_fun(*this,&SimpleBundlePlugin::onInstructionExecutionBefore));
@@ -45,7 +44,7 @@ void SimpleBundlePlugin::slotTranslateInstructionEnd(ExecutionSignal *signal,
                                                    TranslationBlock *tb,
                                                    uint64_t pc)
 {
-	if(isenabled)
+	if(isEnabled())
 	{
 		dbaf()->getDebugStream()<< "TranslateInstructionEnd pc=" << std::hex << pc << endl;
 		signal->connect(fsigc::mem_fun(*this,&SimpleBundlePlugin::onInstructionExecutionAfter));

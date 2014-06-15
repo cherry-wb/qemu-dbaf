@@ -34,6 +34,20 @@ for (_DBAFForeachContainer<__typeof__(container)> _container_(container); \
 #define foreachset(_i, _b, _e) \
       for(typeof(_b) _i = _b, _i ## end = _e; _i != _i ## end;  ++ _i)
 
+struct hexval {
+    uint64_t value;
+    int width;
+
+    hexval(uint64_t _value, int _width=0) : value(_value), width(_width) {}
+    hexval(void* _value, int _width=0): value((uint64_t)_value), width(_width) {}
+};
+
+inline std::ostream& operator<<(std::ostream& out, const hexval& h)
+{
+    out << std::hex << (h.value);
+    return out;
+}
+
 namespace dbaf {
 class ConfigFile;
 class Annotation;
@@ -42,6 +56,18 @@ class Plugin;
 class CorePlugin;
 class CpuExitException
 {
+public:
+	CpuExitException(){
+		reason = 0;
+		virtualAddress = 0;
+	}
+	CpuExitException(int _reason,uint64_t _virtualAddress){
+		reason = _reason;
+		virtualAddress = _virtualAddress;
+	}
+public:
+	int reason;
+	uint64_t virtualAddress;
 };
 
 class DBAF {

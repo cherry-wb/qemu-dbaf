@@ -24,4 +24,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>qemu-system-i386</name>
+			<type>1</type>
+			<location>/home/wb/workspace/build/qemu-dbaf/i386-dbaf-softmmu/qemu-system-i386</location>
+		</link>
+	</linkedResources>
 </projectDescription>

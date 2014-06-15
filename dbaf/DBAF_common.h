@@ -37,10 +37,6 @@ typedef uintptr_t DBAF_Handle;
 //Used for addresses since -1 is a rarely used-if ever 32-bit address
 #define INV_ADDR (-1) //0xFFFFFFFF is only for 32-bit
 
-/**
- * ERRORCODES
- */
-
 typedef int DBAF_errno_t;
 /**
  * Returned when a pointer is NULL when it should not have been

@@ -157,7 +157,7 @@ plugins.simplebundle ={
 
     //加载进内存
     foreach(const string& pluginName, pluginNames) {
-    	 string pathkey("plugins."+pluginName+".so_path");
+    	 string pathkey("pluginsConfig."+pluginName+".so_path");
     	 string so_path = getConfig()->getString(pathkey,"");
     	 if(so_path.length() > 2){//加载进内存，如果一个多个插件放在一个so中，则只加载进内存一次
     		do_load_bundle_internal(default_mon,so_path.c_str());

@@ -31,16 +31,22 @@ void SignalTesterPlugin::slotTranslateInstructionStart(ExecutionSignal *signal,
                                                    TranslationBlock *tb,
                                                    uint64_t pc)
 {
-	dbaf()->getDebugStream()<< "TranslateInstructionStart pc=" << std::hex << pc << endl;
-	signal->connect(fsigc::mem_fun(*this,&SignalTesterPlugin::onInstructionExecutionBefore));
+	if(isEnabled()){
+		dbaf()->getDebugStream()<< "TranslateInstructionStart pc=" << std::hex << pc << endl;
+		signal->connect(fsigc::mem_fun(*this,&SignalTesterPlugin::onInstructionExecutionBefore));
+	}
 }
 void SignalTesterPlugin::slotTranslateInstructionEnd(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,
                                                    TranslationBlock *tb,
-                                                   uint64_t pc)
-{
-	dbaf()->getDebugStream()<< "TranslateInstructionEnd pc=" << std::hex << pc << endl;
-	signal->connect(fsigc::mem_fun(*this,&SignalTesterPlugin::onInstructionExecutionAfter));
+                                                   uint64_t pc) {
+	if (isEnabled()) {
+		dbaf()->getDebugStream() << "TranslateInstructionEnd pc=" << std::hex
+				<< pc << endl;
+		signal->connect(
+				fsigc::mem_fun(*this,
+						&SignalTesterPlugin::onInstructionExecutionAfter));
+	}
 }
 void SignalTesterPlugin::onInstructionExecutionBefore(DBAFExecutionState* state, uint64_t pc, uint64_t nextpc){
 	dbaf()->getDebugStream()<< "ExecuteInstruction Before pc=" << std::hex << pc <<" nextpc=" << nextpc << endl;

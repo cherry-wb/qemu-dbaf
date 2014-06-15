@@ -121,7 +121,7 @@ static inline void tlb_flush(CPUState *cpu, int flush_global)
 }
 #endif
 
-#define CODE_GEN_ALIGN           16 /* must be >= of the size of a icache line */
+#define CODE_GEN_ALIGN           128 /* must be >= of the size of a icache line */ //cherry
 
 #define CODE_GEN_PHYS_HASH_BITS     15
 #define CODE_GEN_PHYS_HASH_SIZE     (1 << CODE_GEN_PHYS_HASH_BITS)

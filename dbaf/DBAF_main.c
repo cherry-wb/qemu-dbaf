@@ -157,6 +157,14 @@ int do_enable_bundle(Monitor *mon, const QDict *qdict, QObject **ret_data){
 	}else{
 		monitor_printf(default_mon, "%s is not loaded!\n", fpath);
 	}
+	CPUState *cpu;
+	CPU_FOREACH(cpu)
+	{
+		if (cpu) {
+			CPUArchState *env = cpu->env_ptr;
+			tb_flush(env);
+		}
+	}
 	return (0);
 }
 int do_disable_bundle(Monitor *mon, const QDict *qdict, QObject **ret_data){
@@ -180,6 +188,14 @@ int do_disable_bundle(Monitor *mon, const QDict *qdict, QObject **ret_data){
 
 	}else{
 		monitor_printf(default_mon, "%s is not loaded!\n", fpath);
+	}
+	CPUState *cpu;
+	CPU_FOREACH(cpu)
+	{
+		if (cpu) {
+			CPUArchState *env = cpu->env_ptr;
+			tb_flush(env);
+		}
 	}
 	return (0);
 }
@@ -213,3 +229,18 @@ int do_unload_bundle(Monitor *mon, const QDict *qdict, QObject **ret_data) {
 	}
 	return (0);
 }
+void do_guest_ps(Monitor *mon, const QDict *qdict)
+{
+	do_guest_ps_internal(mon,qdict);
+}
+
+void do_guest_modules(Monitor *mon, const QDict *qdict)
+{
+	do_guest_modules_internal(mon, qdict);
+}
+void do_module_functions(Monitor *mon, const QDict *qdict){
+	const char* module = NULL;
+	module = qdict_get_str(qdict, "module");
+	do_module_functions_internal(mon, module);
+}
+
