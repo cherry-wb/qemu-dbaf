@@ -20,9 +20,27 @@ namespace dbaf {
 } // namespace dbaf
 using namespace dbaf;
 extern "C" void helper_dbaf_tcg_execution_handler(CPUArchState* env, void*  signal, target_ulong pc, target_ulong nextpc);
+bool trace_memory_access_code = false;
+bool trace_memory_access_data = false;
+bool trace_memory_access_kernel = false;
+bool trace_memory_access_user = false;
+bool trace_memory_access_ksmap = false;
+bool trace_memory_access_mmu = false;
+bool trace_memory_access_cmmu = false;
+bool trace_memory_read = false;
+bool trace_memory_write = false;
 void CorePlugin::initialize()
 {
 	dbaf()->getDebugStream()<< "execution_handler at " << (void*) helper_dbaf_tcg_execution_handler <<"\n";
+	trace_memory_access_code = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_code", false);
+	trace_memory_access_data = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_data", false);
+	trace_memory_access_kernel = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_kernel", false);
+	trace_memory_access_user = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_user", false);
+	trace_memory_access_ksmap = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_ksmap", false);
+	trace_memory_access_mmu = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_mmu", false);
+	trace_memory_access_cmmu = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_cmmu", false);
+	trace_memory_read = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_read", false);
+	trace_memory_write = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_write", false);
 }
 
 /******************************/
@@ -211,12 +229,73 @@ void dbaf_on_translate_register_access(CPUArchState* env,TCGv_ptr cpn_env,
                   g_dbaf_state, tb, pc, readMask, writeMask, (bool)isMemoryAccess);
 
         if(!signal->empty()) {
-            dbaf_tcg_instrument_code(cpn_env, signal, pc,nextpc);
+            dbaf_tcg_instrument_code(cpn_env, signal, pc, nextpc);
             tb->dbaf_extra->executionSignals.push_back(new ExecutionSignal);
         }
     } catch(dbaf::CpuExitException&) {
         siglongjmp(cs->jmp_env, 1);
     }
+}
+static void dbaf_trace_memory_access_slow(CPUArchState* env,
+        uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO, MemoryAccessType atype)
+{
+	CPUState *cs = ENV_GET_CPU(env);
+    try {
+    	int mask = 0;
+    	mask |= isWrite;
+    	mask |= 1 << 2*isIO;
+    	g_dbaf->getCorePlugin()->onMemoryAccess.emit(g_dbaf_state,
+            vaddr,haddr, buf,size, mask, atype);
+    }  catch(dbaf::CpuExitException&) {
+        siglongjmp(cs->jmp_env, 1);
+    }
+}
+
+/**
+ * We split the function in two parts so that the common case when
+ * there is no instrumentation is as fast as possible.
+ */
+void dbaf_trace_memory_access(CPUArchState* env,
+        uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO, MemoryAccessType atype)
+{
+    if(unlikely(!g_dbaf->getCorePlugin()->onMemoryAccess.empty())
+    		&& ((trace_memory_read && ((isWrite & 1) == 0)) || (trace_memory_write && (isWrite & 1)))
+#ifdef TARGET_I386
+    		&& (g_selected_cr3 !=0 && env->cr[3] == g_selected_cr3)
+#endif
+    		) {
+        dbaf_trace_memory_access_slow(env, vaddr, haddr, buf, size, isWrite, isIO, atype);
+    }
+}
+void dbaf_trace_memory_access_code(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_code)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_CODE);
+}
+void dbaf_trace_memory_access_data(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_data)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_DATA);
+}
+void dbaf_trace_memory_access_kernel(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_kernel)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_KERNEL);
+}
+void dbaf_trace_memory_access_user(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_user)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_USER);
+}
+void dbaf_trace_memory_access_ksmap(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_ksmap)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_KSMAP);
+}
+void dbaf_trace_memory_access_mmu(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_mmu)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_MMU);
+}
+void dbaf_trace_memory_access_cmmu(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO){
+	if(trace_memory_access_cmmu)dbaf_trace_memory_access(env, vaddr, haddr, buf, size, isWrite, isIO, AT_CMMU);
 }
 
 void dbaf_on_page_fault(CPUArchState* env,DBAF *dbaf, DBAFExecutionState* state, uint64_t addr, int is_write)
@@ -291,5 +370,25 @@ void helper_dbaf_tcg_custom_instruction_handler(CPUArchState* env,uint64_t arg)
     } catch(dbaf::CpuExitException&) {
     	siglongjmp(cs->jmp_env, 1);
     }
+}
+const char * StringMemoryAccessType(MemoryAccessType type) {
+	switch (type) {
+	case AT_CODE:
+		return "CODE";
+	case AT_DATA:
+		return "DATA";
+	case AT_KERNEL:
+		return "KERNEL";
+	case AT_USER:
+		return "USER";
+	case AT_KSMAP:
+		return "KSMAP";
+	case AT_CMMU:
+		return "CMMU";
+	case AT_MMU:
+		return "MMU";
+	default:
+		return "Unknown";
+	}
 }
 }

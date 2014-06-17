@@ -55,11 +55,12 @@ extern int do_disable_bundle(Monitor *mon, const QDict *qdict, QObject **ret_dat
 void do_guest_ps(Monitor *mon, const QDict *qdict);
 void do_guest_modules(Monitor *mon, const QDict *qdict);
 void do_module_functions(Monitor *mon, const QDict *qdict);
+void do_select_process(Monitor *mon, const QDict *qdict);
 
 extern void do_guest_ps_internal(Monitor *mon, const QDict *qdict);
 extern void do_guest_modules_internal(Monitor *mon, const QDict *qdict);
 extern void do_module_functions_internal(Monitor *mon, const char *module);
-
+extern void do_select_process_internal(Monitor *mon, const QDict *qdict);
 #ifdef __cplusplus
 }
 #endif

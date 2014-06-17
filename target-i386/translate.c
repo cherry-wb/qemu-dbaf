@@ -154,23 +154,25 @@ static void gen_jmp_tb(DisasContext *s, target_ulong eip, int tb_num);
 static void gen_op(DisasContext *s1, int op, TCGMemOp ot, int d);
 
 #ifdef CONFIG_DBAF
-static inline void dbaf_translate_compute_reg_mask_end(DisasContext *dc)
+static inline void dbaf_translate_compute_reg_mask(DisasContext *dc, int forcemark)
 {
-    uint64_t rmask, wmask, accesses_mem;
+	uint64_t rmask, wmask, accesses_mem;
 
-    if (dc->done_reg_access_end) {
-        return;
-    }
-
-    tcg_calc_regmask_ex(&tcg_ctx, &rmask, &wmask, &accesses_mem, dc->ins_opc, dc->ins_arg);
-
-    //First five bits contain flag registers
-    rmask >>= 5;
-    wmask >>= 5;
-
-    dbaf_on_translate_register_access(dc->archcpuState,cpu_env,dc->tb, dc->insPc, rmask, wmask, (int)accesses_mem,cpu_tmpnextpc);
-
-    dc->done_reg_access_end = 1;
+	if (!dc->done_reg_access_end) {
+		if (dc->useNextPc) {
+			tcg_gen_movi_tl(cpu_tmpnextpc, dc->nextPc);
+		} else {
+			tcg_gen_ld_tl(cpu_tmpnextpc, cpu_env, offsetof(CPUX86State, eip) );
+		}
+		tcg_calc_regmask_ex(&tcg_ctx, &rmask, &wmask, &accesses_mem,
+				dc->ins_opc, dc->ins_arg);
+		//First five bits contain flag registers
+		rmask >>= 5;
+		wmask >>= 5;
+		dbaf_on_translate_register_access(dc->archcpuState, cpu_env, dc->tb,
+				dc->insPc, rmask, wmask, (int) accesses_mem, cpu_tmpnextpc);
+		dc->done_reg_access_end = forcemark > 0 ? 1 : 0;
+	}
 }
 static inline void gen_instr_end(DisasContext *s,int forcemark)
 {
@@ -466,9 +468,6 @@ static void gen_add_A0_im(DisasContext *s, int val)
 static inline void gen_op_jmp_v(DisasContext *s,TCGv dest,target_ulong pc)
 {
     tcg_gen_st_tl(dest, cpu_env, offsetof(CPUX86State, eip));
-#ifdef CONFIG_DBAF
-	dbaf_translate_compute_reg_mask_end(s);
-#endif
 }
 
 static inline void gen_op_add_reg_im(TCGMemOp size, int reg, int32_t val)
@@ -2286,6 +2285,7 @@ static inline void gen_goto_tb(DisasContext *s, int tb_num, target_ulong eip)
         /* jump to same page: we can use a direct jump */
 #ifdef CONFIG_DBAF
         gen_jmp_im(s, eip);
+        dbaf_translate_compute_reg_mask(s, 0);
         gen_instr_end(s, 0);
 		if(s->useNextPc)
 		{
@@ -2651,6 +2651,7 @@ static void gen_eob(DisasContext *s)
         gen_helper_single_step(cpu_env);
     } else {
 #ifdef CONFIG_DBAF
+    dbaf_translate_compute_reg_mask(s, 1);
     gen_instr_end(s,1);
 	if(s->useNextPc)
 	{
@@ -8169,13 +8170,13 @@ static inline void gen_intermediate_code_internal(X86CPU *cpu,
         pc_ptr = disas_insn(env, dc, pc_ptr);
 #ifdef CONFIG_DBAF
         //Compute the register mask and send the onRegisterAccess event
-        dbaf_translate_compute_reg_mask_end(dc);
         if (!dc->is_jmp) {
             //Allow proper pc update for onTranslateInstruction events
             dc->nextPc = pc_ptr - dc->cs_base;
             //fprintf(stderr, "pc_ptr=%x cs_base=%x nextpc= %x\n", pc_ptr, dc->cs_base, dc->nextPc);
             dc->useNextPc = 1;
 
+            dbaf_translate_compute_reg_mask(dc, 1);
 			gen_instr_end(dc,1);
         }
 #endif

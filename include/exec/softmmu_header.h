@@ -78,6 +78,15 @@
 #define ADDR_READ addr_read
 #endif
 
+#define CODESUFFIX _code
+#if defined(CONFIG_DBAF) //&& tostring(MEMSUFFIX) != tostring(CODESUFFIX)
+#define DBAF_TRACE_MEMORY(vaddr, haddr, value, isWrite, isIO) \
+    glue(dbaf_trace_memory_access, MEMSUFFIX)(env, vaddr, haddr, \
+                            (uint8_t*) &value, sizeof(value), isWrite, isIO);
+#else
+#define DBAF_TRACE_MEMORY(...)
+#endif
+
 /* generic load/store macros */
 
 static inline RES_TYPE
@@ -97,6 +106,7 @@ glue(glue(cpu_ld, USUFFIX), MEMSUFFIX)(CPUArchState *env, target_ulong ptr)
     } else {
         uintptr_t hostaddr = addr + env->tlb_table[mmu_idx][page_index].addend;
         res = glue(glue(ld, USUFFIX), _raw)(hostaddr);
+        DBAF_TRACE_MEMORY(addr, hostaddr, res, 0, 0);
     }
     return res;
 }
@@ -119,6 +129,7 @@ glue(glue(cpu_lds, SUFFIX), MEMSUFFIX)(CPUArchState *env, target_ulong ptr)
     } else {
         uintptr_t hostaddr = addr + env->tlb_table[mmu_idx][page_index].addend;
         res = glue(glue(lds, SUFFIX), _raw)(hostaddr);
+        DBAF_TRACE_MEMORY(addr, hostaddr, res, 0, 0);
     }
     return res;
 }
@@ -145,6 +156,7 @@ glue(glue(cpu_st, SUFFIX), MEMSUFFIX)(CPUArchState *env, target_ulong ptr,
     } else {
         uintptr_t hostaddr = addr + env->tlb_table[mmu_idx][page_index].addend;
         glue(glue(st, SUFFIX), _raw)(hostaddr, v);
+        DBAF_TRACE_MEMORY(addr, hostaddr, v, 1, 0);
     }
 }
 
@@ -211,3 +223,4 @@ static inline void glue(cpu_stfl, MEMSUFFIX)(CPUArchState *env,
 #undef CPU_MMU_INDEX
 #undef MMUSUFFIX
 #undef ADDR_READ
+#undef DBAF_TRACE_MEMORY

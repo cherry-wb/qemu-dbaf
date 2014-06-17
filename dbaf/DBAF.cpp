@@ -228,6 +228,8 @@ extern "C" {
 DBAF* g_dbaf = NULL;
 DBAFExecutionState* g_dbaf_state = NULL;
 
+uint64_t g_selected_cr3 = 0;
+
 DBAF* DBAF_initialize(int argc, char** argv, const char* s2e_config_file) {
 	return new DBAF(argc, argv, s2e_config_file ? s2e_config_file : "");
 }

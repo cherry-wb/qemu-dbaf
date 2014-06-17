@@ -106,6 +106,7 @@ public:
 
 	void list_processes(Monitor *mon);
 	void list_modules(Monitor *mon,int pid);
+	void select_process(Monitor *mon,int pid);
 
 };
 

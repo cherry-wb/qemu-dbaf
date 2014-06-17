@@ -5,11 +5,11 @@ dbaf = {
 
 plugins = {
 --	"SignalTesterPlugin"
-	"WindowsMonitor",
---	"SimpleBundlePlugin",
+--	"WindowsMonitor",
+	"SimpleBundlePlugin",
 --	"BasicBlockSignalPlugin",
-	"HookManager",
-	"Kernel32Hooker",
+--	"HookManager",
+--	"Kernel32Hooker",
 }
 pluginsConfig = {
 }
@@ -28,7 +28,17 @@ pluginsConfig.Kernel32Hooker ={
 								   --如果是卸载这个插件，则不会将其移除内存，而只是调用其disable_bundle函数
 		filename = "logger.txt",
 }
-
+pluginsConfig.CorePlugin={
+	trace_memory_access_code = false,
+	trace_memory_access_data = true,
+	trace_memory_access_kernel = false,
+	trace_memory_access_user = false,
+	trace_memory_access_ksmap = false,
+	trace_memory_access_mmu = true,
+	trace_memory_access_cmmu = false,
+	trace_memory_read = true,
+	trace_memory_write = true,
+}
 pluginsConfig.WindowsMonitor =
 {
     version="XPSP3",

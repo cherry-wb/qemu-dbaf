@@ -13,6 +13,11 @@ extern "C" {
 typedef struct TranslationBlock TranslationBlock;
 void helper_dbaf_tcg_execution_handler(CPUArchState* env,void* signal, target_ulong pc, target_ulong nextpc);//
 void helper_dbaf_tcg_custom_instruction_handler(CPUArchState* env,uint64_t arg);
+enum MemoryAccessType{
+	AT_CODE,AT_DATA, AT_KERNEL, AT_USER, AT_KSMAP, AT_CMMU, AT_MMU
+};
+const char * StringMemoryAccessType(MemoryAccessType type);
+
 }
 namespace dbaf {
 
@@ -81,6 +86,14 @@ public:
             uint64_t /* instruction PC */,
             int /* jump_type */>
             onTranslateJumpStart;
+
+    fsigc::signal<void, DBAFExecutionState*,
+					uint64_t /* virtualAddress */,
+					uint64_t /* hostAddress */,
+					uint8_t* /* buf */,
+					unsigned /* size */,
+					int /* flagmask: offset-0:isWrite, offset-1:isIO */,MemoryAccessType /* MemoryAccessType : code data kernel user ksmap cmmu mmu */>
+               onMemoryAccess;
 
     /** Signal that is emitted upon exception */
     fsigc::signal<void, DBAFExecutionState*,

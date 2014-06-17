@@ -116,6 +116,14 @@
 # define helper_te_st_name  helper_le_st_name
 #endif
 
+#ifdef CONFIG_DBAF
+#define DBAF_TRACE_MEMORY(vaddr, haddr, value, isWrite, isIO) \
+    glue(dbaf_trace_memory_access, MMUSUFFIX)(env, vaddr, haddr, \
+                            (uint8_t*) &value, sizeof(value), isWrite, isIO);
+#else
+#define DBAF_TRACE_MEMORY(...)
+#endif
+
 static inline DATA_TYPE glue(io_read, SUFFIX)(CPUArchState *env,
                                               hwaddr physaddr,
                                               target_ulong addr,
@@ -174,6 +182,7 @@ WORD_TYPE helper_le_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
            byte ordering.  We should push the LE/BE request down into io.  */
         res = glue(io_read, SUFFIX)(env, ioaddr, addr, retaddr);
         res = TGT_LE(res);
+        DBAF_TRACE_MEMORY(addr, addr+ioaddr, res, 0, 1);
         return res;
     }
 
@@ -214,6 +223,7 @@ WORD_TYPE helper_le_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
 #else
     res = glue(glue(ld, LSUFFIX), _le_p)((uint8_t *)haddr);
 #endif
+    DBAF_TRACE_MEMORY(addr, haddr, res, 0, 0);
     return res;
 }
 
@@ -256,6 +266,7 @@ WORD_TYPE helper_be_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
            byte ordering.  We should push the LE/BE request down into io.  */
         res = glue(io_read, SUFFIX)(env, ioaddr, addr, retaddr);
         res = TGT_BE(res);
+        DBAF_TRACE_MEMORY(addr, addr+ioaddr, res, 0, 1);
         return res;
     }
 
@@ -292,6 +303,7 @@ WORD_TYPE helper_be_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
     res = glue(glue(ld, LSUFFIX), _be_p)((uint8_t *)haddr);
+    DBAF_TRACE_MEMORY(addr, haddr, res, 0, 0);
     return res;
 }
 #endif /* DATA_SIZE > 1 */
@@ -376,6 +388,7 @@ void helper_le_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
            byte ordering.  We should push the LE/BE request down into io.  */
         val = TGT_LE(val);
         glue(io_write, SUFFIX)(env, ioaddr, val, addr, retaddr);
+        DBAF_TRACE_MEMORY(addr, addr+ioaddr, val, 1, 1);
         return;
     }
 
@@ -415,6 +428,7 @@ void helper_le_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
 #else
     glue(glue(st, SUFFIX), _le_p)((uint8_t *)haddr, val);
 #endif
+    DBAF_TRACE_MEMORY(addr, haddr, val, 1, 0);
 }
 
 #if DATA_SIZE > 1
@@ -452,6 +466,7 @@ void helper_be_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
            byte ordering.  We should push the LE/BE request down into io.  */
         val = TGT_BE(val);
         glue(io_write, SUFFIX)(env, ioaddr, val, addr, retaddr);
+        DBAF_TRACE_MEMORY(addr, addr+ioaddr, val, 1, 1);
         return;
     }
 
@@ -487,6 +502,7 @@ void helper_be_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
     glue(glue(st, SUFFIX), _be_p)((uint8_t *)haddr, val);
+    DBAF_TRACE_MEMORY(addr, haddr, val, 1, 0);
 }
 #endif /* DATA_SIZE > 1 */
 
@@ -523,3 +539,4 @@ glue(glue(helper_st, SUFFIX), MMUSUFFIX)(CPUArchState *env, target_ulong addr,
 #undef helper_be_st_name
 #undef helper_te_ld_name
 #undef helper_te_st_name
+#undef DBAF_TRACE_MEMORY

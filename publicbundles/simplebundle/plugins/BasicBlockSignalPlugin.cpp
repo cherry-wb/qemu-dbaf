@@ -32,11 +32,11 @@ void BasicBlockSignalPlugin::slotTranslateBlockStart(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,
                                                    TranslationBlock *tb,
                                                    uint64_t pc){
-	if(isEnabled())
-	{
+//	if(isEnabled())
+//	{
 		dbaf()->getDebugStream()<< "TranslateBlockStart pc=" << std::hex << pc << endl;
 		signal->connect(fsigc::mem_fun(*this,&BasicBlockSignalPlugin::onBlockStartExecution));
-	}
+//	}
 }
 void BasicBlockSignalPlugin::slotTranslateBlockEnd(ExecutionSignal *signal,
                                                    DBAFExecutionState *state,

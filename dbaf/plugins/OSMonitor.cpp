@@ -299,12 +299,24 @@ void OSMonitor::list_modules(Monitor *mon, int pid) {
 	}
 
 }
+void  OSMonitor::select_process(Monitor *mon,int pid){
+	unordered_map<uint32_t, process *>::iterator iter = process_pid_map.find(
+			pid);
+	if (iter == process_pid_map.end())	//pid not found
+		monitor_printf(mon, "process with this pid not found.\n");
+	else {
+		process *proc = iter->second;
+		g_selected_cr3 = proc->cr3;
+		monitor_printf(mon, "selected process %20s\t pid:0x%08x\t cr3:0x%08x\n",
+				proc->name, proc->pid, proc->cr3);
+	}
+}
 } // namespace plugins
 } /* namespace dbaf */
 
 extern "C" void do_guest_ps_internal(Monitor *mon, const QDict *qdict);
 extern "C" void do_guest_modules_internal(Monitor *mon, const QDict *qdict);
-
+extern "C" void do_select_process_internal(Monitor *mon, const QDict *qdict);
 void do_guest_ps_internal(Monitor *mon, const QDict *qdict){
 	dbaf::plugins::OSMonitor *osmonitor =
 			static_cast<dbaf::plugins::OSMonitor*>(g_dbaf->getPlugin(
@@ -331,3 +343,19 @@ void do_guest_modules_internal(Monitor *mon, const QDict *qdict) {
 	osmonitor->list_modules(mon, pid);
 }
 
+void do_select_process_internal(Monitor *mon, const QDict *qdict){
+	int pid = -1;
+	if (qdict_haskey(qdict, "pid")) {
+		pid = qdict_get_int(qdict, "pid");
+	}
+
+	if (pid == -1) {
+		monitor_printf(mon, "need a pid\n");
+	}
+	dbaf::plugins::OSMonitor *osmonitor =
+			static_cast<dbaf::plugins::OSMonitor*>(g_dbaf->getPlugin(
+					"Interceptor"));
+	if (!osmonitor)
+		return;
+	osmonitor->select_process(mon, pid);
+}

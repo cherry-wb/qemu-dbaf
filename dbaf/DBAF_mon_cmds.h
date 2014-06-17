@@ -55,6 +55,13 @@
 	.help		= "list the functions of the module"
 },
 
+{
+	.name		= "select_process",
+	.args_type	= "pid:i",
+	.mhandler.cmd	= do_select_process,
+	.params		= "pid",
+	.help		= "select the process with <pid> as global target"
+},
 //#ifdef CONFIG_TCG_SYM
 ///* TCG tainting commands */
 //{

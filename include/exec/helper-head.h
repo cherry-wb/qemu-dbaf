@@ -129,6 +129,18 @@
 #define DEF_HELPER_5(name, ret, t1, t2, t3, t4, t5) \
     DEF_HELPER_FLAGS_5(name, 0, ret, t1, t2, t3, t4, t5)
 
+#define DEF_HELPER_0_M(name, ret, rm, wm, m) \
+    DEF_HELPER_FLAGS_0_M(name, 0, ret, rm, wm, m)
+#define DEF_HELPER_1_M(name, ret, t1, rm, wm, m) \
+    DEF_HELPER_FLAGS_1_M(name, 0, ret, t1, rm, wm, m)
+#define DEF_HELPER_2_M(name, ret, t1, t2, rm, wm, m) \
+    DEF_HELPER_FLAGS_2_M(name, 0, ret, t1, t2, rm, wm, m)
+#define DEF_HELPER_3_M(name, ret, t1, t2, t3, rm, wm, m) \
+    DEF_HELPER_FLAGS_3_M(name, 0, ret, t1, t2, t3, rm, wm, m)
+#define DEF_HELPER_4_M(name, ret, t1, t2, t3, t4, rm, wm, m) \
+    DEF_HELPER_FLAGS_4_M(name, 0, ret, t1, t2, t3, t4, rm, wm, m)
+#define DEF_HELPER_5_M(name, ret, t1, t2, t3, t4, t5, rm, wm, m) \
+    DEF_HELPER_FLAGS_5_M(name, 0, ret, t1, t2, t3, t4, t5, rm, wm, m)
 /* MAX_OPC_PARAM_IARGS must be set to n if last entry is DEF_HELPER_FLAGS_n. */
 
 #endif /* DEF_HELPER_H */

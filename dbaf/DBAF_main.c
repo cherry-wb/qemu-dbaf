@@ -243,4 +243,8 @@ void do_module_functions(Monitor *mon, const QDict *qdict){
 	module = qdict_get_str(qdict, "module");
 	do_module_functions_internal(mon, module);
 }
+void do_select_process(Monitor *mon, const QDict *qdict)
+{
+	do_select_process_internal(mon, qdict);
+}
 

@@ -21,7 +21,22 @@
 #define _EXEC_ALL_H_
 
 #include "qemu-common.h"
-
+#ifdef CONFIG_DBAF
+extern void dbaf_trace_memory_access_code(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_data(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_kernel(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_user(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_ksmap(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_mmu(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+extern void dbaf_trace_memory_access_cmmu(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+        int isWrite, int isIO);
+#endif
 /* allow to see translation results - the slowdown should be negligible, so we leave it */
 #define DEBUG_DISAS
 

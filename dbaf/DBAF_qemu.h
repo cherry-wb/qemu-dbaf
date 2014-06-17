@@ -46,7 +46,8 @@ void dbaf_on_translate_jump_start(CPUArchState* env,TCGv_ptr cpn_env,
 void dbaf_on_translate_register_access(CPUArchState* env,TCGv_ptr cpn_env,
 		struct TranslationBlock *tb, uint64_t pc,
 		uint64_t readMask, uint64_t writeMask, int isMemoryAccess, TCGv nextpc);
-
+//void dbaf_trace_memory_access(CPUArchState* env,uint64_t vaddr, uint64_t haddr, uint8_t* buf, unsigned size,
+//        int isWrite, int isIO);
 void dbaf_on_exception(CPUArchState* env,unsigned intNb);
 void dbaf_on_initialization_complete(void);
 //void dbaf_on_page_fault(CPUArchState* env,struct DBAF *dbaf, struct DBAFExecutionState* state, uint64_t addr, int is_write);
