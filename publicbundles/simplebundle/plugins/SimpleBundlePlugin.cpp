@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <bitset>
 #include <stdlib.h>
+#include <dbaf/utils/disasplus.h>
 using namespace std;
 namespace dbaf {
 
@@ -52,7 +53,9 @@ void SimpleBundlePlugin::slotTranslateRegisterAccessEnd(ExecutionSignal *signal,
  * 在指令执行后，相关的寄存器读写已完成，才会调用这个会调
  */
  void SimpleBundlePlugin::onRegisterAccess(DBAFExecutionState* state, uint64_t pc, uint64_t nextpc, bool isCall){
+
 	 dbaf()->getDebugStream()<< "ESP RegisterAccess pc=" << std::hex << pc <<" nextpc=" << nextpc << endl;
+	 target_disas_to_ofstream(&(dbaf()->getDebugStream()), state->getCPUArchState(), pc);
  }
 
 void SimpleBundlePlugin::onMemoryAccess(DBAFExecutionState* state, uint64_t vaddr,

@@ -164,6 +164,7 @@ ifdef CONFIG_DBAF
 $(call set-vpath, $(SRC_PATH))
 dbafobj-y += dbaf/signals/signals.o 
 dbafobj-y += dbaf/utils/Output.o
+dbafobj-y += dbaf/utils/disasplus.o
 dbafobj-y += dbaf/utils/HashtableWrapper.o
 dbafobj-y += dbaf/Synchronization.o
 dbafobj-y += dbaf/DBAF.o dbaf/DBAFExecutionState.o dbaf/Plugin.o
