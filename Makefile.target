@@ -178,7 +178,7 @@ llvm-y += target-i386/cc_helper.bc2 target-i386/excp_helper.bc2 target-i386/fpu_
 llvm-y += target-i386/int_helper.bc2 target-i386/mem_helper.bc2 target-i386/misc_helper.bc2 
 llvm-y += target-i386/seg_helper.bc2 target-i386/smm_helper.bc2 target-i386/svm_helper.bc2 
 llvm-y += target-i386/helper.bc2
-llvm-y += util/host-utils.bc2
+llvm-y += util/host-utils.bc2 fpu/softfloat.bc2
 llvmmorph-y += llvm-helpers.bc
 endif
 

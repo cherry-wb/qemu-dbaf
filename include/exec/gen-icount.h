@@ -63,5 +63,12 @@ static inline void gen_io_end(void)
     tcg_gen_st_i32(tmp, cpu_env, -ENV_OFFSET + offsetof(CPUState, can_do_io));
     tcg_temp_free_i32(tmp);
 }
-
+static inline void gen_op_update_guest_pc(uint64_t new_pc)
+{
+    TCGv_i64 tmp_pc;
+    tmp_pc = tcg_temp_new_i64();
+    tcg_gen_movi_i64(tmp_pc, new_pc);
+    tcg_gen_st_i64(tmp_pc, cpu_env, offsetof(CPUArchState, current_guest_pc));
+    tcg_temp_free_i64(tmp_pc);
+}
 #endif

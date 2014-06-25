@@ -28,6 +28,7 @@ extern struct DBAF* g_dbaf;
 extern struct DBAFExecutionState* g_dbaf_state;
 extern int g_dbaf_enable_signals;
 extern uint64_t g_selected_cr3;
+extern bool update_current_pc;
 /** Initialize DBAF instance. Called by main() */
 struct DBAF* DBAF_initialize(int argc, char** argv,const char *s2e_config_file);
 struct DBAFExecutionState* DBAF_state_initialize(void);

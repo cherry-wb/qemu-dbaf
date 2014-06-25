@@ -41,6 +41,7 @@ void CorePlugin::initialize()
 	trace_memory_access_cmmu = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_access_cmmu", false);
 	trace_memory_read = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_read", false);
 	trace_memory_write = dbaf()->getConfig()->getBool(getConfigKey() + ".trace_memory_write", false);
+	update_current_pc = dbaf()->getConfig()->getBool(getConfigKey() + ".update_current_pc", false);
 }
 
 /******************************/
@@ -392,3 +393,4 @@ const char * StringMemoryAccessType(MemoryAccessType type) {
 	}
 }
 }
+

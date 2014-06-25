@@ -4529,6 +4529,9 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
         tcg_gen_debug_insn_start(pc_start);//记录 TCG 中间码对应的汇编代码的pc
     }
 #ifdef CONFIG_DBAF
+	if (update_current_pc) {
+		gen_op_update_guest_pc(pc_start);
+	}
 	s->insPc = pc_start;
 	s->done_instr_end = 0;
 	s->done_reg_access_end = 0;
