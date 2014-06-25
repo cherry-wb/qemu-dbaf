@@ -12,8 +12,8 @@ DEFINES+= -D__STDC_LIMIT_MACROS -fPIC -DPIE -m64 -D_GNU_SOURCE -D_FILE_OFFSET_BI
 DEFINES+= -Wall -Wundef -Wwrite-strings -fno-strict-aliasing -fno-common -Wendif-labels -Wmissing-include-dirs -Wempty-body 
 DEFINES+= -Wformat-security -Wformat-y2k -Winit-self -Wignored-qualifiers -Wtype-limits -fstack-protector-all -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 
 DEFINES+= $(GLIB_CFLAGS)
-CC=gcc
-CPP=g++
+CC=/home/wb/workspace/llvm/llvm3.2/llvm-native/Release/bin/clang
+CPP=/home/wb/workspace/llvm/llvm3.2/llvm-native/Release/bin/clang++
 CFLAGS=-Wall -O2 -g -fPIC 
 LDFLAGS=-g -shared 
 LIBS+=

@@ -154,7 +154,8 @@ WORD_TYPE helper_le_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].ADDR_READ;
     uintptr_t haddr;
     DATA_TYPE res;
-
+    if(retaddr==0)
+    	retaddr = GETRA();
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
 
@@ -238,7 +239,8 @@ WORD_TYPE helper_be_ld_name(CPUArchState *env, target_ulong addr, int mmu_idx,
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].ADDR_READ;
     uintptr_t haddr;
     DATA_TYPE res;
-
+    if(retaddr==0)
+		retaddr = GETRA();
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
 
@@ -360,7 +362,8 @@ void helper_le_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
     int index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].addr_write;
     uintptr_t haddr;
-
+    if(retaddr==0)
+		retaddr = GETRA();
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
 
@@ -438,7 +441,8 @@ void helper_be_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
     int index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].addr_write;
     uintptr_t haddr;
-
+    if(retaddr==0)
+		retaddr = GETRA();
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
 

@@ -33,6 +33,12 @@ DEF("dbaf-config-file", HAS_ARG, QEMU_OPTION_dbaf_config_file,
 DEF("load_bundle", HAS_ARG, QEMU_OPTION_load_bundle,
     "load_bundle   file      Path to bundle so file\n", QEMU_ARCH_ALL)
 #endif
+#if defined(CONFIG_LLVM)
+DEF("execute-llvm", 0, QEMU_OPTION_execute_llvm,
+    "execute-llvm           execute code using LLVM JIT\n", QEMU_ARCH_ALL)
+DEF("generate-llvm", 0, QEMU_OPTION_generate_llvm,
+    "-generate-llvm  translate code into LLVM but don't execute it\n", QEMU_ARCH_ALL)
+#endif
 
 DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
     "-machine [type=]name[,prop[=value][,...]]\n"

@@ -61,6 +61,19 @@ extern void do_guest_ps_internal(Monitor *mon, const QDict *qdict);
 extern void do_guest_modules_internal(Monitor *mon, const QDict *qdict);
 extern void do_module_functions_internal(Monitor *mon, const char *module);
 extern void do_select_process_internal(Monitor *mon, const QDict *qdict);
+
+void do_enable_llvm(Monitor *mon, const QDict *qdict);
+void do_disable_llvm(Monitor *mon, const QDict *qdict);
+void do_enable_llvm_helpers(Monitor *mon, const QDict *qdict);
+void do_disable_llvm_helpers(Monitor *mon, const QDict *qdict);
+void do_enable_llvm_all(Monitor *mon, const QDict *qdict);
+void do_disable_llvm_all(Monitor *mon, const QDict *qdict);
+
+void do_flush_tb(void);
+void do_enable_llvm_internal(void);
+void do_disable_llvm_internal(void);
+void do_enable_llvm_helpers_internal(void);
+void do_disable_llvm_helpers_internal(void);
 #ifdef __cplusplus
 }
 #endif

@@ -13,6 +13,8 @@ void cpu_synchronize_all_post_init(void);
 
 void qtest_clock_warp(int64_t dest);
 
+void log_all_cpu_states(void);
+
 #ifndef CONFIG_USER_ONLY
 /* vl.c */
 extern int smp_cores;

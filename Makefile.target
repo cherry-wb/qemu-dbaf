@@ -5,11 +5,13 @@ include config-target.mak
 include config-devices.mak
 include $(SRC_PATH)/rules.mak
 
+include $(SRC_PATH)/dbaf/config.replay
+
 $(call set-vpath, $(SRC_PATH))
 ifdef CONFIG_LINUX
-QEMU_CFLAGS += -I../linux-headers
+QEMU_CFLAGS += -I../linux-headers $(RR_CFLAGS)
 endif
-QEMU_CFLAGS += -I.. -I$(SRC_PATH)/target-$(TARGET_BASE_ARCH) -DNEED_CPU_H
+QEMU_CFLAGS += -I.. -I$(SRC_PATH)/target-$(TARGET_BASE_ARCH) -DNEED_CPU_H $(RR_CFLAGS)
 
 QEMU_CFLAGS+=-I$(SRC_PATH)/include
 
@@ -75,6 +77,7 @@ all: $(PROGS) stap
 
 #########################################################
 # cpu emulator library
+tcg/tcg-llvm.o: QEMU_CXXFLAGS+=$(LLVM_CXXFLAGS)
 obj-y = exec.o translate-all.o cpu-exec.o
 obj-y += tcg/tcg.o tcg/optimize.o
 obj-$(CONFIG_TCG_INTERPRETER) += tci.o
@@ -84,7 +87,7 @@ obj-y += target-$(TARGET_BASE_ARCH)/
 obj-y += disas.o
 obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
 obj-$(call lnot,$(CONFIG_KVM)) += kvm-stub.o
-
+obj-$(CONFIG_LLVM) += tcg/tcg-llvm.o
 #DBAF make this complie in target dir,so that we can add some config info
 obj-y += vl.o
 vl.o-cflags := $(GPROF_CFLAGS) $(SDL_CFLAGS)
@@ -123,6 +126,7 @@ obj-$(CONFIG_KVM) += kvm-all.o
 obj-y += memory.o savevm.o cputlb.o
 obj-y += memory_mapping.o
 obj-y += dump.o
+obj-y += rr_log.o
 LIBS+=$(libs_softmmu)
 
 # xen support
@@ -157,6 +161,39 @@ dummy := $(call unnest-vars,.., \
                common-obj-y \
                common-obj-m)
                
+ifdef CONFIG_LLVM
+
+#########################################################
+# LLVM library
+
+# regular bitcode
+llvm-y =
+
+# morphed bitcode - morph call instructions and function names after bitcode is
+# linked together to make helper bitcode available for use by plugins
+llvmmorph-y =
+
+ifeq ($(TARGET_BASE_ARCH), i386)
+llvm-y += target-i386/cc_helper.bc2 target-i386/excp_helper.bc2 target-i386/fpu_helper.bc2
+llvm-y += target-i386/int_helper.bc2 target-i386/mem_helper.bc2 target-i386/misc_helper.bc2 
+llvm-y += target-i386/seg_helper.bc2 target-i386/smm_helper.bc2 target-i386/svm_helper.bc2 
+llvm-y += target-i386/helper.bc2
+llvm-y += util/host-utils.bc2
+llvmmorph-y += llvm-helpers.bc
+endif
+
+$(llvm-y): %.bc2: %.c $(GENERATED_HEADERS)
+
+llvm-helpers.bc1: $(llvm-y)
+	$(call quiet-command,$(LLVM_LINK) -o $@ $^,"  LLVM_LINK    $(TARGET_DIR)$@")
+
+$(llvmmorph-y): %.bc: %.bc1
+
+# add this to the all target, and make sure to run the code morph at the end of building
+all: $(llvmmorph-y)
+
+endif # CONFIG_LLVM
+               
 #########################################################
 # DBAF library
 dbafobj-y :=
@@ -174,20 +211,16 @@ dbafobj-y += dbaf/ConfigFile.o
 dbafobj-y += dbaf/plugins/SignalTesterPlugin.o
 dbafobj-y += dbaf/DBAF_main.o
 dbafobj-y += dbaf/DBAF_qemu_memory.o
+dbafobj-y += dbaf/llvm/helper_call_morph.o
+#dbafobj-y += dbaf/rr_log.o
 dbafobj-y += dbaf/plugins/OSMonitor.o dbaf/plugins/OShelper/function_map.o dbaf/plugins/WindowsMonitor.o 
 dbafobj-y += dbaf/plugins/X86FunctionMonitor.o dbaf/plugins/ModuleExecutionDetector.o dbaf/plugins/X86HookManager.o
-#dbafobj-y += dbaf/DBAF_callback.o dbaf/DBAF_cmds.o
-#dbafobj-y += dbaf/hookapi.o dbaf/windows_vmi.o dbaf/vmi.o dbaf/vmi_c_wrapper.o
-#dbafobj-y += dbaf/linux_procinfo.o dbaf/linux_readelf.o dbaf/linux_vmi.o
-#dbafobj-y +=dbaf/tainting/reduce_taint.o dbaf/tainting/taintcheck_opt.o dbaf/tainting/tainting.o
-#dbafobj-y +=dbaf/tainting/taint_memory.o dbaf/tainting/analysis_log.o
-#dbafobj-y +=dbaf/tainting/tcg_taint.o
-#dbafobj-y +=dbaf/DBAF_vm_compress.o
-
 
 vl.o: QEMU_CFLAGS+=-Wno-array-bounds
 
 dbaf/ConfigFile.o: QEMU_CXXFLAGS+=-fno-inline
+
+dbaf/llvm/helper_call_morph.o: QEMU_CXXFLAGS+=$(LLVM_CXXFLAGS)
 
 libdbaf.a: $(dbafobj-y)
 

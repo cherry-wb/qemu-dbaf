@@ -96,6 +96,10 @@ case $line in
     target_name=${line#*=}
     echo "#define TARGET_NAME \"$target_name\""
     ;;
+ TARGET_DIR=*)
+    target_dir=${line#*=}
+    echo "#define TARGET_DIR \"$target_dir\""
+    ;;
  TARGET_DIRS=*)
     # do nothing
     ;;

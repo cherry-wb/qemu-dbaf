@@ -1171,6 +1171,58 @@ static inline const char *tcg_find_helper(TCGContext *s, uintptr_t val)
     }
     return ret;
 }
+const char *tcg_helper_get_name(TCGContext *s, void *func)
+{
+    return tcg_find_helper(s,  (uintptr_t)func);
+}
+#ifdef CONFIG_LLVM
+/* helper signature: helper_ret_ld_mmu(CPUState *env, target_ulong addr,
+ *                                     int mmu_idx, uintptr_t ra)
+ */
+void * const qemu_ld_helpers_llvm[16] = {
+    [MO_UB]   = helper_ret_ldub_mmu,
+    [MO_LEUW] = helper_le_lduw_mmu,
+    [MO_LEUL] = helper_le_ldul_mmu,
+    [MO_LEQ]  = helper_le_ldq_mmu,
+    [MO_BEUW] = helper_be_lduw_mmu,
+    [MO_BEUL] = helper_be_ldul_mmu,
+    [MO_BEQ]  = helper_be_ldq_mmu,
+};
+
+/* helper signature: helper_ret_st_mmu(CPUState *env, target_ulong addr,
+ *                                     uintxx_t val, int mmu_idx, uintptr_t ra)
+ */
+void * const qemu_st_helpers_llvm[16] = {
+    [MO_UB]   = helper_ret_stb_mmu,
+    [MO_LEUW] = helper_le_stw_mmu,
+    [MO_LEUL] = helper_le_stl_mmu,
+    [MO_LEQ]  = helper_le_stq_mmu,
+    [MO_BEUW] = helper_be_stw_mmu,
+    [MO_BEUL] = helper_be_stl_mmu,
+    [MO_BEQ]  = helper_be_stq_mmu,
+};
+
+
+char *qemu_ld_helper_names_llvm[16] = {
+	[MO_UB]   = (char*)"helper_ret_ldub_mmu",
+	[MO_LEUW] = (char*)"helper_le_lduw_mmu",
+	[MO_LEUL] = (char*)"helper_le_ldul_mmu",
+	[MO_LEQ]  = (char*)"helper_le_ldq_mmu",
+	[MO_BEUW] = (char*)"helper_be_lduw_mmu",
+	[MO_BEUL] = (char*)"helper_be_ldul_mmu",
+	[MO_BEQ]  = (char*)"helper_be_ldq_mmu",
+};
+
+char *qemu_st_helper_names_llvm[16] = {
+	[MO_UB]   = (char*)"helper_ret_stb_mmu",
+	[MO_LEUW] = (char*)"helper_le_stw_mmu",
+	[MO_LEUL] = (char*)"helper_le_stl_mmu",
+	[MO_LEQ]  = (char*)"helper_le_stq_mmu",
+	[MO_BEUW] = (char*)"helper_be_stw_mmu",
+	[MO_BEUL] = (char*)"helper_be_stl_mmu",
+	[MO_BEQ]  = (char*)"helper_be_stq_mmu",
+};
+#endif
 #ifdef CONFIG_DBAF
 static inline TCGHelperInfo *tcg_find_helperinfo(TCGContext *s, uintptr_t val)
 {
@@ -2895,8 +2947,8 @@ struct jit_descriptor {
     struct jit_code_entry *first_entry;
 };
 
-void __jit_debug_register_code(void) __attribute__((noinline));
-void __jit_debug_register_code(void)
+void __tcg_jit_debug_register_code(void) __attribute__((noinline));
+void __tcg_jit_debug_register_code(void)
 {
     asm("");
 }
@@ -3115,7 +3167,7 @@ static void tcg_register_jit_int(void *buf_ptr, size_t buf_size,
     __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
     __jit_debug_descriptor.relevant_entry = &one_entry;
     __jit_debug_descriptor.first_entry = &one_entry;
-    __jit_debug_register_code();
+    __tcg_jit_debug_register_code();
 }
 #else
 /* No support for the feature.  Provide the entry point expected by exec.c,

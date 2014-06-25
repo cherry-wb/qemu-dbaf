@@ -5,7 +5,7 @@ dbaf = {
 
 plugins = {
 --	"SignalTesterPlugin"
---	"WindowsMonitor",
+	"WindowsMonitor",
 	"SimpleBundlePlugin",
 --	"BasicBlockSignalPlugin",
 --	"HookManager",
@@ -94,7 +94,7 @@ pluginsConfig.WindowsMonitor =
 function config_parsed(state,desc)--current execution state and some describe
 	state:readMemory()
 	state:writeMemory()
-	desc:setValue("numone",911)
-	print(desc:getValue("numone"))
-	print("config_parsed。")
+--	desc:setValue("numone",911)
+--	print(desc:getValue("numone"))
+--	print("config_parsed。")
 end

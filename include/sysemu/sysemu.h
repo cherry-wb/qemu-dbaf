@@ -71,8 +71,12 @@ void qemu_remove_exit_notifier(Notifier *notify);
 
 void qemu_add_machine_init_done_notifier(Notifier *notify);
 
+void do_savevm_aux(Monitor *mon, const char *name);
 void do_savevm(Monitor *mon, const QDict *qdict);
+int do_savevm_rr(Monitor *mon, const char *name);
 int load_vmstate(const char *name);
+int load_vmstate_rr(const char *name);
+
 void do_delvm(Monitor *mon, const QDict *qdict);
 void do_info_snapshots(Monitor *mon, const QDict *qdict);
 

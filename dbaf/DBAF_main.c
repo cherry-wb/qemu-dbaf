@@ -18,7 +18,6 @@
 // use micro mechanism
 //void DBAF_monitor_printf(Monitor *mon, const char *fmt, ...){}
 #else
-typedef struct _IO_FILE FILE;
 bool firstprint = true;
 void DBAF_monitor_printf(Monitor *mon, const char *fmt, ...)
 {
@@ -248,3 +247,68 @@ void do_select_process(Monitor *mon, const QDict *qdict)
 	do_select_process_internal(mon, qdict);
 }
 
+void do_flush_tb(void){
+	CPUState *cpu;
+	CPU_FOREACH(cpu)
+	{
+		if (cpu) {
+			CPUArchState *env = cpu->env_ptr;
+			tb_flush(env);
+		}
+	}
+}
+
+#ifdef CONFIG_LLVM
+#include <dbaf/llvm/helper_call_morph.h>
+#include <tcg/tcg-llvm.h>
+void do_enable_llvm_internal(void){
+	do_flush_tb();
+    execute_llvm = 1;
+    generate_llvm = 1;
+    tcg_llvm_ctx = tcg_llvm_initialize();
+}
+
+void do_disable_llvm_internal(void){
+    execute_llvm = 0;
+    generate_llvm = 0;
+    do_flush_tb();
+    tcg_llvm_destroy();
+    tcg_llvm_ctx = NULL;
+}
+
+void do_enable_llvm_helpers_internal(void){
+    init_llvm_helpers();
+}
+void do_disable_llvm_helpers_internal(void){
+    uninit_llvm_helpers();
+}
+#else
+void do_enable_llvm_internal(void){
+}
+void do_disable_llvm_internal(void){
+}
+void do_enable_llvm_helpers_internal(void){
+}
+void do_disable_llvm_helpers_internal(void){
+}
+#endif
+void do_enable_llvm(Monitor *mon, const QDict *qdict){
+	do_enable_llvm_internal();
+}
+void do_disable_llvm(Monitor *mon, const QDict *qdict){
+	do_disable_llvm_internal();
+}
+void do_enable_llvm_helpers(Monitor *mon, const QDict *qdict){
+	do_enable_llvm_helpers_internal();
+}
+void do_disable_llvm_helpers(Monitor *mon, const QDict *qdict){
+	do_disable_llvm_helpers_internal();
+}
+void do_enable_llvm_all(Monitor *mon, const QDict *qdict){
+	do_enable_llvm_internal();
+	do_enable_llvm_helpers_internal();
+}
+void do_disable_llvm_all(Monitor *mon, const QDict *qdict){
+	do_disable_llvm_helpers_internal();
+	do_disable_llvm_internal();
+}

@@ -29,6 +29,9 @@ expand-objs = $(strip $(sort $(filter %.o,$1)) \
                   $(foreach o,$(filter %.mo,$1),$($o-objs)) \
                   $(filter-out %.o %.mo,$1))
 
+%.o: %.bc
+	$(call quiet-command,$(LLVMCC) -fPIC -O3 -c -o $@ $<,"  LLVMCC    $(TARGET_DIR)$@")
+	
 %.o: %.c
 	$(call quiet-command,$(CC) $(QEMU_INCLUDES) $(QEMU_CFLAGS) $(QEMU_DGFLAGS) $(CFLAGS) $($@-cflags) -c -o $@ $<,"  CC    $(TARGET_DIR)$@")
 %.o: %.rc
@@ -94,6 +97,12 @@ modules:
 %.a:
 	$(call quiet-command,rm -f $@ && $(AR) rcs $@ $^,"  AR    $(TARGET_DIR)$@")
 
+%.bc2: %.c $(GENERATED_HEADERS)
+	$(call quiet-command,$(LLVMCC) $(filter-out -g -Wold-style-declaration,$(QEMU_INCLUDES) $(QEMU_CFLAGS) $(QEMU_DGFLAGS) $(CFLAGS)) -O2 -c -emit-llvm -o $@ $<,"  LLVMCC    $(TARGET_DIR)$@")
+
+%.bc: %.bc1
+	$(call quiet-command,$(LLVM_HELPER_MORPH) -i $< -o $@,"  LLVM_HELPER_MORPH    $(TARGET_DIR)$@")
+	
 quiet-command = $(if $(V),$1,$(if $(2),@echo $2 && $1, @$1))
 
 # cc-option

@@ -23,6 +23,7 @@
  */
 
 #include "config-host.h"
+#include "config-target.h"
 #include "qemu-common.h"
 #include "hw/hw.h"
 #include "hw/qdev.h"
@@ -903,8 +904,7 @@ static int del_existing_snapshots(Monitor *mon, const char *name)
 
     return 0;
 }
-
-void do_savevm(Monitor *mon, const QDict *qdict)
+void do_savevm_aux(Monitor *mon, const char *name)
 {
     BlockDriverState *bs, *bs1;
     QEMUSnapshotInfo sn1, *sn = &sn1, old_sn1, *old_sn = &old_sn1;
@@ -914,7 +914,7 @@ void do_savevm(Monitor *mon, const QDict *qdict)
     uint64_t vm_state_size;
     qemu_timeval tv;
     struct tm tm;
-    const char *name = qdict_get_try_str(qdict, "name");
+//    const char *name = qdict_get_try_str(qdict, "name");
 
     /* Verify if there is a device that doesn't support snapshots and is writable */
     bs = NULL;
@@ -1000,6 +1000,57 @@ void do_savevm(Monitor *mon, const QDict *qdict)
     if (saved_vm_running) {
         vm_start();
     }
+}
+
+void do_savevm(Monitor *mon, const QDict *qdict) {
+  const char *name = qdict_get_try_str(qdict, "name");
+  assert(name != NULL);
+  do_savevm_aux(mon, name);
+}
+
+int do_savevm_rr(Monitor *mon, const char *name) {
+#ifdef CONFIG_DBAF
+    int ret;
+    QEMUFile *f;
+
+    /* save the VM state */
+    f = qemu_fopen(name, "wb");
+    if (!f) {
+        error_report("Could not open VM state file\n");
+        return -1;
+    }
+    ret = qemu_savevm_state(f);
+    qemu_fclose(f);
+    if (ret < 0) {
+        monitor_printf(mon, "Error %d while writing VM\n", ret);
+        return -2;
+    }
+#endif
+    return 0;
+}
+
+// Just implement vmstate loading (don't apply block dev snapshots)
+int load_vmstate_rr(const char *name) {
+#ifdef CONFIG_DBAF
+    QEMUFile *f;
+    int ret;
+
+    f = qemu_fopen(name, "rb");
+    if (!f) {
+        error_report("Could not open VM state file");
+        return -EINVAL;
+    }
+
+    qemu_system_reset(VMRESET_SILENT);
+    ret = qemu_loadvm_state(f);
+
+    qemu_fclose(f);
+    if (ret < 0) {
+        error_report("Error %d while loading VM state", ret);
+        return ret;
+    }
+#endif
+    return 0;
 }
 
 void qmp_xen_save_devices_state(const char *filename, Error **errp)

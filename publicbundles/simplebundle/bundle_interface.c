@@ -35,7 +35,7 @@ bundle_interface_t* init_bundle(void) {
 	simplebundle_interface.bundle_enable = &simplebundle_enable;
 	simplebundle_interface.bundle_disable = &simplebundle_disable;
 	//initialize the plugin
-	fprintf(stderr, "init_bundle end.\n");
+	fprintf(stderr, "simplebundle init end.\n");
 	return (&simplebundle_interface);
 }
 

@@ -159,7 +159,9 @@ static inline void tlb_flush(CPUState *cpu, int flush_global)
 #endif
 #ifdef CONFIG_DBAF
 #ifdef __cplusplus
-namespace dbaf { class DBAFTBExtra; }
+namespace dbaf {
+    struct DBAFTBExtra;
+}
 using dbaf::DBAFTBExtra;
 #else
 struct DBAFTBExtra;
@@ -182,6 +184,19 @@ enum JumpType
 {
     JT_RET, JT_LRET
 };
+#endif
+#ifdef CONFIG_LLVM
+struct TCGLLVMTranslationBlock;
+#ifdef __cplusplus
+namespace llvm { class Function; }
+using llvm::Function;
+class TCGLLVMContext;
+#define structprifx
+#else
+struct TCGLLVMContext;
+struct Function;
+#define structprifx struct
+#endif
 #endif
 struct TranslationBlock {
     target_ulong pc;   /* simulated PC corresponding to this block (EIP + CS base) */
@@ -228,6 +243,14 @@ struct TranslationBlock {
     struct DBAFTBExtra* dbaf_extra;
     struct TranslationBlock*dbaf_tb_next[2];
     uint64_t pcOfLastInstr; /* XXX: hack for call instructions */
+#endif
+#ifdef CONFIG_LLVM
+    /* pointer to LLVM translated code */
+    structprifx TCGLLVMContext *tcg_llvm_context;
+    structprifx Function *llvm_function;
+    uint8_t *llvm_tc_ptr;
+    uint8_t *llvm_tc_end;
+    struct TranslationBlock* llvm_tb_next[2];
 #endif
 };
 
@@ -363,6 +386,9 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
         /* add in TB jmp circular list */
         tb->jmp_next[n] = tb_next->jmp_first;
         tb_next->jmp_first = (TranslationBlock *)((uintptr_t)(tb) | (n));
+#ifdef CONFIG_LLVM
+        tb->llvm_tb_next[n] = tb_next;
+#endif
     }
 }
 
@@ -469,5 +495,9 @@ static inline bool cpu_can_do_io(CPUState *cpu)
     }
     return cpu->can_do_io != 0;
 }
+
+extern int generate_llvm;
+extern int execute_llvm;
+extern const int has_llvm_engine;
 
 #endif

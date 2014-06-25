@@ -62,6 +62,50 @@
 	.params		= "pid",
 	.help		= "select the process with <pid> as global target"
 },
+#ifdef CONFIG_LLVM
+{
+        .name       = "enable_llvm",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_enable_llvm,
+        .help       = "Turn on llvm execution",
+},
+{
+        .name       = "disable_llvm",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_disable_llvm,
+        .help       = "Turn off llvm execution",
+},
+{
+        .name       = "enable_llvm_helpers",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_enable_llvm_helpers,
+        .help       = "Turn on helper morph",
+},
+{
+        .name       = "disable_llvm_helpers",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_disable_llvm_helpers,
+        .help       = "Turn off helper morph",
+},
+{
+        .name       = "enable_llvm_all",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_enable_llvm_all,
+        .help       = "Turn on llvm execution and helper morph ",
+},
+{
+        .name       = "disable_llvm_all",
+        .args_type  = "",
+        .params     = "",
+        .mhandler.cmd = do_disable_llvm_all,
+        .help       = "Turn off llvm execution and helper morph",
+},
+#endif
 //#ifdef CONFIG_TCG_SYM
 ///* TCG tainting commands */
 //{

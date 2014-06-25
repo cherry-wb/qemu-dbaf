@@ -119,6 +119,27 @@ int main(int argc, char **argv)
 #include "ui/qemu-spice.h"
 #include "qapi/string-input-visitor.h"
 #include "qom/object_interfaces.h"
+
+#ifdef CONFIG_LLVM
+struct TCGLLVMContext;
+
+extern struct TCGLLVMContext* tcg_llvm_ctx;
+extern int generate_llvm;
+extern int execute_llvm;
+extern const int has_llvm_engine;
+
+struct TCGLLVMContext* tcg_llvm_initialize(void);
+void tcg_llvm_destroy(void);
+
+static void tcg_llvm_cleanup(void)
+{
+    if(tcg_llvm_ctx) {
+        tcg_llvm_destroy();
+        tcg_llvm_ctx = NULL;
+    }
+}
+#endif
+
 #ifdef CONFIG_DBAF
 #include "dbaf/DBAF_main.h"
 #include "dbaf/DBAF_qemu_mini.h"
@@ -3132,6 +3153,23 @@ int main(int argc, char **argv, char **envp)
                 load_bundle = optarg;
                 break;
 #endif
+#if defined(CONFIG_LLVM)
+            case QEMU_OPTION_execute_llvm:
+                if (!has_llvm_engine) {
+                    fprintf(stderr, "Cannot execute under LLVM mode\n");
+                    exit(1);
+                }
+                generate_llvm = 1;
+                execute_llvm = 1;
+                break;
+            case QEMU_OPTION_generate_llvm:
+                if (!has_llvm_engine) {
+                    fprintf(stderr, "Cannot execute under LLVM mode\n");
+                    exit(1);
+                }
+                generate_llvm = 1;
+                break;
+#endif
             case QEMU_OPTION_cpu:
                 /* hw initialization will check this */
                 cpu_model = optarg;
@@ -4089,7 +4127,13 @@ int main(int argc, char **argv, char **envp)
         g_dbaf_state = DBAF_state_initialize();
         atexit(DBAF_cleanup);
 #endif
-
+#if defined(CONFIG_LLVM)
+    if (generate_llvm || execute_llvm){
+        if (tcg_llvm_ctx == NULL){
+            tcg_llvm_ctx = tcg_llvm_initialize();
+        }
+    }
+#endif
     smp_parse(qemu_opts_find(qemu_find_opts("smp-opts"), NULL));
 
     machine_class->max_cpus = machine_class->max_cpus ?: 1; /* Default to UP */
@@ -4610,6 +4654,11 @@ int main(int argc, char **argv, char **envp)
 #endif
 #ifdef CONFIG_DBAF
     DBAF_cleanup();
+#endif
+#ifdef CONFIG_LLVM
+    if (generate_llvm || execute_llvm){
+        tcg_llvm_cleanup();
+    }
 #endif
     return 0;
 }

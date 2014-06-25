@@ -23,6 +23,13 @@
 #include "qemu/atomic.h"
 #include "sysemu/qtest.h"
 
+#if defined(CONFIG_LLVM)
+#include "tcg/tcg-llvm.h"
+const int has_llvm_engine = 1;
+int generate_llvm = 0;
+int execute_llvm = 0;
+#endif
+
 void cpu_loop_exit(CPUState *cpu)
 {
     cpu->current_tb = NULL;
@@ -63,8 +70,17 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, uint8_t *tb_ptr)
 #endif
     }
 #endif /* DEBUG_DISAS */
-
+#if defined(CONFIG_LLVM)
+	if(execute_llvm) {
+		assert(cpu->current_tb->llvm_tc_ptr);
+		next_tb = tcg_llvm_qemu_tb_exec(env, cpu->current_tb);
+	} else {
+		assert(tb_ptr);
+		next_tb = tcg_qemu_tb_exec(env, tb_ptr);
+	}
+#else
     next_tb = tcg_qemu_tb_exec(env, tb_ptr);
+#endif
     if ((next_tb & TB_EXIT_MASK) > TB_EXIT_IDX1) {
         /* We didn't start executing this TB (eg because the instruction
          * counter hit zero); we must restore the guest PC to the address
@@ -220,7 +236,29 @@ static void cpu_handle_debug_exception(CPUArchState *env)
 }
 
 /* main execution loop */
+#ifdef CONFIG_SOFTMMU
+//void rr_set_program_point(void) {
+//    if (cpu_single_env) {
+//#if defined( TARGET_I386 )
+//        rr_set_prog_point(cpu_single_env->eip, cpu_single_env->regs[R_ECX], GUEST_ICOUNT);
+//#else
+//        rr_set_prog_point(cpu_single_env->panda_guest_pc, 0, GUEST_ICOUNT);
+//#endif
+//    }
+//}
+//
+//void rr_quit_cpu_loop(void) {
+//    if (cpu_single_env) {
+//        cpu_single_env->exception_index = EXCP_INTERRUPT;
+//        cpu_loop_exit(cpu_single_env);
+//    }
+//}
 
+void rr_clear_rr_guest_instr_count(CPUState *cpu_state);
+void rr_clear_rr_guest_instr_count(CPUState *cpu_state) {
+  //cpu_state->rr_guest_instr_count = 0;
+}
+#endif
 volatile sig_atomic_t exit_request;
 
 int cpu_exec(CPUArchState *env)

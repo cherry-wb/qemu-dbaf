@@ -2118,7 +2118,10 @@ static const TCGTargetOpDef x86_op_defs[] = {
     { INDEX_op_setcond_i32, { "q", "r", "ri" } },
 
     { INDEX_op_deposit_i32, { "Q", "0", "Q" } },
+#if defined(CONFIG_LLVM)
+#else // CONFIG_LLVM
     { INDEX_op_movcond_i32, { "r", "r", "ri", "r", "0" } },
+#endif // CONFIG_LLVM
 
     { INDEX_op_mulu2_i32, { "a", "d", "a", "r" } },
     { INDEX_op_muls2_i32, { "a", "d", "a", "r" } },
@@ -2174,7 +2177,10 @@ static const TCGTargetOpDef x86_op_defs[] = {
     { INDEX_op_ext32u_i64, { "r", "r" } },
 
     { INDEX_op_deposit_i64, { "Q", "0", "Q" } },
+#if defined(CONFIG_LLVM)
+#else // CONFIG_LLVM
     { INDEX_op_movcond_i64, { "r", "r", "re", "r", "0" } },
+#endif // CONFIG_LLVM
 
     { INDEX_op_mulu2_i64, { "a", "d", "a", "r" } },
     { INDEX_op_muls2_i64, { "a", "d", "a", "r" } },

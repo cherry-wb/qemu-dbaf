@@ -737,6 +737,13 @@ TCGArg *tcg_optimize(TCGContext *s, uint16_t *tcg_opc_ptr, TCGArg *args,
 
 /* only used for debugging purposes */
 void tcg_dump_ops(TCGContext *s);
+const char *tcg_helper_get_name(TCGContext *s, void *func);
+#ifdef CONFIG_LLVM
+extern void * const qemu_ld_helpers_llvm[];
+extern void * const qemu_st_helpers_llvm[];
+extern char *qemu_ld_helper_names_llvm[];
+extern char *qemu_st_helper_names_llvm[];
+#endif
 
 void dump_ops(const uint16_t *opc_buf, const TCGArg *opparam_buf);
 TCGv_i32 tcg_const_i32(int32_t val);

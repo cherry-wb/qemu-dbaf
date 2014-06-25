@@ -31,6 +31,9 @@
 									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/backward"/>
 									<listOptionValue builtIn="false" value="/usr/include/c++/4.6/x86_64-linux-gnu"/>
 									<listOptionValue builtIn="false" value="/usr/include/lua5.1"/>
+									<listOptionValue builtIn="false" value="/home/wb/workspace/llvm/llvm3.2/llvm-3.2.src/include"/>
+									<listOptionValue builtIn="false" value="/home/wb/workspace/llvm/llvm3.2/llvm-release/include"/>
+									<listOptionValue builtIn="false" value="/home/wb/workspace/llvm/llvm3.2/llvm-3.2.src.native/tools/clang/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/aidecheatfolder}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/qemu-dbaf/target-i386}&quot;"/>

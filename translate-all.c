@@ -63,6 +63,11 @@
 extern void dbaf_tb_alloc(struct TranslationBlock *tb);
 extern void dbaf_tb_free(struct TranslationBlock *tb);
 #endif
+#ifdef CONFIG_LLVM
+#include "tcg-llvm.h"
+void tcg_llvm_tb_alloc(TranslationBlock *tb);
+void tcg_llvm_tb_free(struct TranslationBlock *tb);
+#endif
 //#define DEBUG_TB_INVALIDATE
 //#define DEBUG_FLUSH
 /* make various TB consistency checks */
@@ -181,6 +186,12 @@ int cpu_gen_code(CPUArchState *env, TranslationBlock *tb, int *gen_code_size_ptr
 #endif
     gen_code_size = tcg_gen_code(s, gen_code_buf);
     *gen_code_size_ptr = gen_code_size;
+
+#if defined(CONFIG_LLVM)
+    if(generate_llvm)
+        tcg_llvm_gen_code(tcg_llvm_ctx, s, tb);
+#endif
+
 #ifdef CONFIG_PROFILER
     s->code_time += profile_getclock();
     s->code_in_len += tb->size;
@@ -194,6 +205,17 @@ int cpu_gen_code(CPUArchState *env, TranslationBlock *tb, int *gen_code_size_ptr
         qemu_log("\n");
         qemu_log_flush();
     }
+#if defined(CONFIG_LLVM)
+    if(generate_llvm && qemu_loglevel_mask(CPU_LOG_LLVM_ASM)
+            && tb->llvm_tc_ptr) {
+        long size = tb->llvm_tc_end - tb->llvm_tc_ptr;
+        qemu_log("OUT (LLVM ASM) [size=%ld] (%s)\n", size,
+                    tcg_llvm_get_func_name(tb));
+        log_disas((void*) tb->llvm_tc_ptr, size);
+        qemu_log("\n");
+        qemu_log_flush();
+    }
+#endif
 #ifdef CONFIG_DBAF
     tb->tc_start_ptr = tb->tc_ptr;
     tb->tc_code_size = gen_code_size;
@@ -228,7 +250,12 @@ static int cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
         /* Clear the IO flag.  */
         cpu->can_do_io = 0;
     }
-
+#if defined(CONFIG_LLVM)
+    if(execute_llvm) {
+        assert(tb->llvm_function != NULL);
+        j = tcg_llvm_search_last_pc(tb, searched_pc);
+    } else {
+#endif
     /* find opc index corresponding to search_pc */
     tc_ptr = (uintptr_t)tb->tc_ptr;
     if (searched_pc < tc_ptr)
@@ -254,6 +281,9 @@ static int cpu_restore_state_from_tb(CPUState *cpu, TranslationBlock *tb,
     while (s->gen_opc_instr_start[j] == 0) {
         j--;
     }
+#ifdef CONFIG_LLVM
+    }
+#endif
     cpu->icount_decr.u16.low -= s->gen_opc_icount[j];
 
     restore_state_to_opc(env, tb, j);
@@ -743,6 +773,9 @@ static TranslationBlock *tb_alloc(target_ulong pc)
 #ifdef CONFIG_DBAF
     dbaf_tb_alloc(tb);
 #endif
+#ifdef CONFIG_LLVM
+    tcg_llvm_tb_alloc(tb);
+#endif
     return tb;
 }
 
@@ -757,6 +790,9 @@ void tb_free(TranslationBlock *tb)
         tcg_ctx.tb_ctx.nb_tbs--;
 #if defined(CONFIG_DBAF)
         dbaf_tb_free(tb);
+#endif
+#if defined(CONFIG_LLVM)
+        tcg_llvm_tb_free(tb);
 #endif
     }
 }
@@ -941,6 +977,9 @@ static inline void tb_jmp_remove(TranslationBlock *tb, int n)
 static inline void tb_reset_jump(TranslationBlock *tb, int n)
 {
     tb_set_jmp_target(tb, n, (uintptr_t)(tb->tc_ptr + tb->tb_next_offset[n]));
+#ifdef CONFIG_LLVM
+    tb->llvm_tb_next[n] = NULL;
+#endif
 }
 
 /* invalidate one TB */
@@ -1451,6 +1490,19 @@ static TranslationBlock *tb_find_pc(uintptr_t tc_ptr)
     if (tcg_ctx.tb_ctx.nb_tbs <= 0) {
         return NULL;
     }
+#if defined(CONFIG_LLVM)
+    if(execute_llvm) {
+        for(m=0; m<tcg_ctx.tb_ctx.nb_tbs; m++) {
+            tb = &tcg_ctx.tb_ctx.tbs[m];
+            if(tb->llvm_function) {
+                if(tc_ptr >= (uintptr_t) tb->llvm_tc_ptr &&
+                   tc_ptr <  (uintptr_t) tb->llvm_tc_end)
+                    return tb;
+            }
+        }
+        return NULL;
+    }
+#endif
     if (tc_ptr < (uintptr_t)tcg_ctx.code_gen_buffer ||
         tc_ptr >= (uintptr_t)tcg_ctx.code_gen_ptr) {
         return NULL;

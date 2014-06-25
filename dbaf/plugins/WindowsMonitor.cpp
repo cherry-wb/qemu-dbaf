@@ -527,7 +527,7 @@ inline int  WindowsMonitor::get_IMAGE_NT_HEADERS(DBAFExecutionState *state, uint
 //FIXME: this function may potentially overflow "buf"
 inline int  WindowsMonitor::readustr_with_cr3(DBAFExecutionState *state, uint32_t addr, uint32_t cr3, void *buf) {
 	uint32_t unicode_data[2];
-	int i, j, unicode_len = 0;
+	int i, j = 0, unicode_len = 0;
 	uint8_t unicode_str[MAX_UNICODE_LENGTH] = { '\0' };
 	char *store = (char *) buf;
 

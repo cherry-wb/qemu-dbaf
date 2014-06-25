@@ -104,4 +104,11 @@ void set_link_completion(ReadLineState *rs, int nb_args, const char *str);
 void netdev_add_completion(ReadLineState *rs, int nb_args, const char *str);
 void netdev_del_completion(ReadLineState *rs, int nb_args, const char *str);
 
+// Record and replay
+void hmp_begin_record(Monitor *mon, const QDict *qdict);
+void hmp_begin_record_from(Monitor *mon, const QDict *qdict);
+void hmp_begin_replay(Monitor *mon, const QDict *qdict);
+void hmp_end_record(Monitor *mon, const QDict *qdict);
+void hmp_end_replay(Monitor *mon, const QDict *qdict);
+
 #endif

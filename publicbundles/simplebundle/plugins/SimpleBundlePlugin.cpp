@@ -54,8 +54,8 @@ void SimpleBundlePlugin::slotTranslateRegisterAccessEnd(ExecutionSignal *signal,
  */
  void SimpleBundlePlugin::onRegisterAccess(DBAFExecutionState* state, uint64_t pc, uint64_t nextpc, bool isCall){
 
-	 dbaf()->getDebugStream()<< "ESP RegisterAccess pc=" << std::hex << pc <<" nextpc=" << nextpc << endl;
-	 target_disas_to_ofstream(&(dbaf()->getDebugStream()), state->getCPUArchState(), pc);
+	 //dbaf()->getDebugStream()<< "ESP RegisterAccess pc=" << std::hex << pc <<" nextpc=" << nextpc << endl;
+	 //target_disas_to_ofstream(&(dbaf()->getDebugStream()), state->getCPUArchState(), pc);
  }
 
 void SimpleBundlePlugin::onMemoryAccess(DBAFExecutionState* state, uint64_t vaddr,

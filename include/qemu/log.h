@@ -41,6 +41,10 @@ static inline bool qemu_log_enabled(void)
 #define LOG_UNIMP          (1 << 10)
 #define LOG_GUEST_ERROR    (1 << 11)
 #define CPU_LOG_EXEC_ASM   (1 << 12)
+#define CPU_LOG_RR         (1 << 13)
+#define CPU_LOG_LLVM_IR    (1 << 14)
+#define CPU_LOG_LLVM_ASM   (1 << 15)
+
 /* Returns true if a bit is set in the current loglevel mask
  */
 static inline bool qemu_loglevel_mask(int mask)

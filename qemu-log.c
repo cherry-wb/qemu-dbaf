@@ -119,9 +119,18 @@ const QEMULogItem qemu_log_items[] = {
       "non-existent register)" },
 	{ CPU_LOG_EXEC_ASM, "exec_asm",
 	  "show executed host assembly code for each compiled TB" },
+    { CPU_LOG_RR, "cpu_rr",
+	  "show cpu record and replay" },
+	{ CPU_LOG_LLVM_IR, "llvm_ir",
+	  "show generated LLVM IR code" },
+	{ CPU_LOG_LLVM_ASM, "llvm_asm",
+	  "show LLVM-generated assembly code" },
     { 0, NULL, NULL },
 };
-
+int is_cpu_log_rr_set(void);
+int is_cpu_log_rr_set(void) {
+    return (qemu_loglevel & CPU_LOG_RR);
+}
 static int cmp1(const char *s1, int n, const char *s2)
 {
     if (strlen(s2) != n) {

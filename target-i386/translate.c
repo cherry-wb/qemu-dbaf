@@ -35,6 +35,10 @@
  #include <dbaf/DBAF_qemu.h>
 #endif
 
+#ifdef CONFIG_LLVM
+#include "tcg-llvm.h"
+#endif
+
 #define PREFIX_REPZ   0x01
 #define PREFIX_REPNZ  0x02
 #define PREFIX_LOCK   0x04
@@ -4516,8 +4520,12 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
     int modrm, reg, rm, mod, op, opreg, val;
     target_ulong next_eip, tval;
     int rex_w, rex_r;
-
-    if (unlikely(qemu_loglevel_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT))) {
+#if defined(CONFIG_LLVM)
+	if (generate_llvm ||unlikely(qemu_loglevel_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT)))
+#else
+	if (unlikely(qemu_loglevel_mask(CPU_LOG_TB_OP | CPU_LOG_TB_OP_OPT)))
+#endif
+    {
         tcg_gen_debug_insn_start(pc_start);//记录 TCG 中间码对应的汇编代码的pc
     }
 #ifdef CONFIG_DBAF

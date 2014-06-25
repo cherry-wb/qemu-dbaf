@@ -60,7 +60,7 @@
 #endif
 
 #endif /* CONFIG_LINUX */
-
+#include "rr_log.h"
 static CPUState *next_cpu;
 
 bool cpu_is_stopped(CPUState *cpu)
@@ -492,6 +492,32 @@ void hw_error(const char *fmt, ...)
     }
     va_end(ap);
     abort();
+}
+//mz 05.2012 adding this for RR logging
+void log_all_cpu_states(void) {
+    CPUState *cpu;
+    int flags;
+
+#ifdef TARGET_I386
+    flags = CPU_DUMP_FPU;
+#else
+    flags = 0;
+#endif
+
+    if (rr_debug_whisper() && qemu_logfile) {
+        fprintf(qemu_logfile, "\nLogging all cpu states\n");
+        CPU_FOREACH(cpu) {
+            fprintf(qemu_logfile, "CPU #%d:\n", cpu->cpu_index);
+            cpu_dump_state(cpu, qemu_logfile, fprintf, flags);
+        }
+    }
+    else {
+        printf ("\nLogging all cpu states\n");
+        CPU_FOREACH(cpu) {
+        	 printf("CPU #%d:\n", cpu->cpu_index);
+			 cpu_dump_state(cpu, stderr, fprintf, flags);
+        }
+    }
 }
 
 void cpu_synchronize_all_states(void)
